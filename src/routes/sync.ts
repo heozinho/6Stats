@@ -80,25 +80,9 @@ sync.post('/recent', async (c) => {
       });
     }
 
-    // Enrich ALL artists in this sync batch with profile images from Spotify
-    const allArtistIds = [...new Set(newArtists.map(a => a.spotifyArtistId))];
-    if (allArtistIds.length > 0) {
-      const artistRes = await fetch(
-        `https://api.spotify.com/v1/artists?ids=${allArtistIds.slice(0, 50).join(',')}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      if (artistRes.ok) {
-        const artistData: any = await artistRes.json();
-        for (const artist of artistData.artists ?? []) {
-          const imgUrl = artist.images?.[0]?.url ?? null;
-          if (imgUrl) {
-            await db.update(artists)
-              .set({ imageUrl: imgUrl })
-              .where(eq(artists.spotifyArtistId, artist.id));
-          }
-        }
-      }
-    }
+    // Note: /artists endpoint returns 403 in Spotify Development Mode.
+    // Artist images are enriched when the app is approved for Extended Quota.
+    // Tracks already have album art from the recently-played response above.
     
     // Insert events
     if (newEvents.length > 0) {

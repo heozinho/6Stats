@@ -1,33 +1,31 @@
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import * as schema from './src/db/schema';
-import { sql } from 'drizzle-orm';
 
 const connectionString = 'postgresql://postgres:Welovepurple12%3F@db.eosghccvgazzqoazbnjd.supabase.co:5432/postgres';
 const client = postgres(connectionString);
 const db = drizzle(client, { schema });
 
 async function main() {
-  const events = await db.select({ count: sql`count(*)` }).from(schema.listeningEvents);
-  console.log('Listening Events Count:', events[0].count);
+  console.log('\n=== TRACKS (first 5, checking imageUrl) ===');
+  const tracks = await db.select({
+    id: schema.tracks.spotifyTrackId,
+    name: schema.tracks.name,
+    imageUrl: schema.tracks.imageUrl,
+  }).from(schema.tracks).limit(5);
+  console.table(tracks);
 
-  const userStats = await db.select().from(schema.dailyUserStats);
-  console.log('Daily User Stats:', userStats);
+  console.log('\n=== ARTISTS (first 5, checking imageUrl) ===');
+  const artists = await db.select({
+    id: schema.artists.spotifyArtistId,
+    name: schema.artists.name,
+    imageUrl: schema.artists.imageUrl,
+  }).from(schema.artists).limit(5);
+  console.table(artists);
 
-  const trackStats = await db.select().from(schema.dailyTrackStats);
-  console.log('Daily Track Stats Count:', trackStats.length);
-
-  const tokens = await db.select().from(schema.spotifyTokens);
-  console.log('Tokens count:', tokens.length);
-  
-  if (tokens.length > 0) {
-    const token = tokens[0].accessTokenEncrypted;
-    const response = await fetch('https://api.spotify.com/v1/me/player/recently-played?limit=10', {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    const data = await response.json();
-    console.log('Spotify recently played response:', JSON.stringify(data).substring(0, 500));
-  }
+  console.log('\n=== DAILY TRACK STATS (first 3) ===');
+  const trackStats = await db.select().from(schema.dailyTrackStats).limit(3);
+  console.table(trackStats);
 
   process.exit(0);
 }
