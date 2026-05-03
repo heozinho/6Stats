@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { Bindings, Variables } from '../types';
 import { getDb } from '../db';
-import { dailyUserStats, dailyTrackStats, dailyArtistStats, tracks, artists } from '../db/schema';
+import { dailyUserStats, dailyTrackStats, dailyArtistStats, tracks, artists, listeningEvents } from '../db/schema';
 import { eq, desc, and, gte } from 'drizzle-orm';
 import { getRedis, getCache, setCache } from '../services/cache';
 
@@ -73,3 +73,35 @@ stats.get('/top-artists', async (c) => {
 
   return c.json({ topArtists: result });
 });
+
+stats.get('/history', async (c) => {
+  const userId = c.get('userId');
+  const env = c.env;
+  const db = getDb(env.DATABASE_URL);
+
+  const page = parseInt(c.req.query('page') ?? '0');
+  const limit = Math.min(parseInt(c.req.query('limit') ?? '50'), 100);
+  const offset = page * limit;
+
+  const result = await db.select({
+    id: listeningEvents.id,
+    playedAt: listeningEvents.playedAt,
+    durationMs: listeningEvents.durationMs,
+    source: listeningEvents.source,
+    trackId: tracks.spotifyTrackId,
+    trackName: tracks.name,
+    imageUrl: tracks.imageUrl,
+    artistId: tracks.artistId,
+    artistName: artists.name,
+  })
+    .from(listeningEvents)
+    .innerJoin(tracks, eq(listeningEvents.spotifyTrackId, tracks.spotifyTrackId))
+    .leftJoin(artists, eq(tracks.artistId, artists.spotifyArtistId))
+    .where(eq(listeningEvents.userId, userId))
+    .orderBy(desc(listeningEvents.playedAt))
+    .limit(limit)
+    .offset(offset);
+
+  return c.json({ history: result, page, limit, hasMore: result.length === limit });
+});
+

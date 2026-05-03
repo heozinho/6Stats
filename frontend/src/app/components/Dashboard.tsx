@@ -3,6 +3,8 @@ import { Clock, TrendingUp, Share2, ChevronRight, RefreshCw, Music, Mic2 } from 
 import { useState, useEffect } from 'react';
 
 interface DashboardProps {
+  backendUrl: string;
+  getHeaders: () => Record<string, string>;
   onViewStatCard: (stats: { todayStats: any; topTracks: any[]; topArtists: any[] }) => void;
 }
 
@@ -15,19 +17,13 @@ function msToReadable(ms: number) {
   return `${Math.floor(mins / 60)}h ${mins % 60}m`;
 }
 
-export function Dashboard({ onViewStatCard }: DashboardProps) {
+export function Dashboard({ backendUrl, getHeaders, onViewStatCard }: DashboardProps) {
   const [activeTab, setActiveTab] = useState<'today' | 'week'>('today');
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [todayStats, setTodayStats] = useState<any>(null);
   const [topTracks, setTopTracks] = useState<any[]>([]);
   const [topArtists, setTopArtists] = useState<any[]>([]);
-
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8788';
-
-  const getHeaders = () => ({
-    Authorization: `Bearer ${localStorage.getItem('6stats_token')}`,
-  });
 
   const fetchStats = async () => {
     try {

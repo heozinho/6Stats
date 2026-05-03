@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
+import { LayoutDashboard, History } from 'lucide-react';
 import { WelcomeScreen } from './components/WelcomeScreen';
 import { Dashboard } from './components/Dashboard';
 import { StatCard } from './components/StatCard';
+import { HistoryScreen } from './components/HistoryScreen';
 
 export interface LiveStats {
   todayStats: any;
@@ -10,17 +12,19 @@ export interface LiveStats {
 }
 
 export default function App() {
-  const [screen, setScreen] = useState<'welcome' | 'dashboard' | 'loading'>('welcome');
+  const [screen, setScreen] = useState<'welcome' | 'app' | 'loading'>('welcome');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'history'>('dashboard');
   const [showStatCard, setShowStatCard] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [liveStats, setLiveStats] = useState<LiveStats | null>(null);
 
   const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8788';
+  const getHeaders = () => ({ Authorization: `Bearer ${localStorage.getItem('6stats_token')}` });
 
   useEffect(() => {
     const token = localStorage.getItem('6stats_token');
     if (token && window.location.search === '') {
-      setScreen('dashboard');
+      setScreen('app');
       return;
     }
 
@@ -46,10 +50,10 @@ export default function App() {
           if (!res.ok) throw new Error('Failed to connect with Spotify');
           return res.json();
         })
-        .then(data => {
+        .then((data: any) => {
           if (data.token) {
             localStorage.setItem('6stats_token', data.token);
-            setScreen('dashboard');
+            setScreen('app');
           } else {
             throw new Error('No token received');
           }
@@ -63,7 +67,8 @@ export default function App() {
   }, []);
 
   return (
-    <div className="size-full bg-background text-foreground overflow-hidden">
+    <div className="size-full bg-background text-foreground overflow-hidden flex flex-col">
+      {/* Error toast */}
       {error && (
         <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-red-500 text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-3">
           {error}
@@ -71,8 +76,9 @@ export default function App() {
         </div>
       )}
 
+      {/* Loading state */}
       {screen === 'loading' && (
-        <div className="min-h-screen w-full flex flex-col items-center justify-center p-6 bg-background relative overflow-hidden">
+        <div className="flex-1 flex flex-col items-center justify-center p-6">
           <div className="animate-spin w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full mb-4" />
           <p className="text-xl font-bold bg-gradient-to-r from-orange-400 to-yellow-400 bg-clip-text text-transparent">
             Connecting to Spotify...
@@ -80,19 +86,59 @@ export default function App() {
         </div>
       )}
 
+      {/* Welcome */}
       {screen === 'welcome' && (
-        <WelcomeScreen onConnect={() => setScreen('dashboard')} />
+        <WelcomeScreen onConnect={() => setScreen('app')} />
       )}
 
-      {screen === 'dashboard' && (
-        <Dashboard
-          onViewStatCard={(stats) => {
-            setLiveStats(stats);
-            setShowStatCard(true);
-          }}
-        />
+      {/* Main app with tabs */}
+      {screen === 'app' && (
+        <>
+          {/* Tab content */}
+          <div className="flex-1 overflow-hidden">
+            {activeTab === 'dashboard' && (
+              <Dashboard
+                backendUrl={backendUrl}
+                getHeaders={getHeaders}
+                onViewStatCard={(stats) => {
+                  setLiveStats(stats);
+                  setShowStatCard(true);
+                }}
+              />
+            )}
+            {activeTab === 'history' && (
+              <HistoryScreen
+                backendUrl={backendUrl}
+                getHeaders={getHeaders}
+              />
+            )}
+          </div>
+
+          {/* Bottom navigation */}
+          <nav className="shrink-0 flex border-t border-white/10 bg-background/95 backdrop-blur-xl">
+            <button
+              onClick={() => setActiveTab('dashboard')}
+              className={`flex-1 flex flex-col items-center py-4 gap-1 transition-colors ${
+                activeTab === 'dashboard' ? 'text-orange-400' : 'text-gray-500 hover:text-gray-300'
+              }`}
+            >
+              <LayoutDashboard className="w-5 h-5" />
+              <span className="text-xs font-semibold">Stats</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('history')}
+              className={`flex-1 flex flex-col items-center py-4 gap-1 transition-colors ${
+                activeTab === 'history' ? 'text-teal-400' : 'text-gray-500 hover:text-gray-300'
+              }`}
+            >
+              <History className="w-5 h-5" />
+              <span className="text-xs font-semibold">History</span>
+            </button>
+          </nav>
+        </>
       )}
 
+      {/* Stat card overlay */}
       {showStatCard && liveStats && (
         <StatCard
           onClose={() => setShowStatCard(false)}
