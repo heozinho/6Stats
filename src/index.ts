@@ -18,6 +18,7 @@ app.route('/auth', auth);
 app.use('/sync/*', (c, next) => {
   const jwtMiddleware = jwt({
     secret: c.env.JWT_SECRET,
+    alg: 'HS256',
   });
   return jwtMiddleware(c, next);
 });
@@ -30,6 +31,7 @@ app.use('/sync/*', async (c, next) => {
 app.use('/stats/*', (c, next) => {
   const jwtMiddleware = jwt({
     secret: c.env.JWT_SECRET,
+    alg: 'HS256',
   });
   return jwtMiddleware(c, next);
 });
