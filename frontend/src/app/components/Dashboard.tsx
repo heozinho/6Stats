@@ -3,7 +3,7 @@ import { Clock, TrendingUp, Share2, ChevronRight, RefreshCw, Music, Mic2 } from 
 import { useState, useEffect } from 'react';
 
 interface DashboardProps {
-  onViewStatCard: () => void;
+  onViewStatCard: (stats: { todayStats: any; topTracks: any[]; topArtists: any[] }) => void;
 }
 
 const colors = ['#ff6b35', '#ffd23f', '#4ecdc4', '#f4a261', '#95e1d3'];
@@ -136,7 +136,7 @@ export function Dashboard({ onViewStatCard }: DashboardProps) {
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.2 }}
         whileHover={{ scale: 1.02 }}
-        onClick={onViewStatCard}
+        onClick={() => onViewStatCard({ todayStats, topTracks, topArtists })}
       >
         <div className="absolute top-4 right-4 opacity-70">
           <Share2 className="w-5 h-5 text-black" />
