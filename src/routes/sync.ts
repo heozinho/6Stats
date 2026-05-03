@@ -3,7 +3,7 @@ import { Bindings, Variables } from '../types';
 import { getDb } from '../db';
 import { getValidSpotifyToken, getRecentlyPlayed } from '../services/spotify';
 import { tracks, artists, listeningEvents } from '../db/schema';
-import { eq, desc, sql } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { runAggregation } from '../crons/aggregate';
 
 export const sync = new Hono<{ Bindings: Bindings; Variables: Variables }>();
@@ -16,16 +16,8 @@ sync.post('/recent', async (c) => {
   try {
     const token = await getValidSpotifyToken(userId, db, env);
     
-    // Get last sync time to avoid fetching too much if possible
-    const lastSync = await db.select({ playedAt: listeningEvents.playedAt })
-      .from(listeningEvents)
-      .where(eq(listeningEvents.userId, userId))
-      .orderBy(desc(listeningEvents.playedAt))
-      .limit(1);
-
-    const after = lastSync.length > 0 ? new Date(lastSync[0].playedAt).getTime() : undefined;
-    
-    const recent = await getRecentlyPlayed(token, 50, after);
+    // Always fetch the 50 most recent — deduplication handled by onConflictDoNothing on insert
+    const recent = await getRecentlyPlayed(token, 50);
 
     if (recent.items.length === 0) {
       return c.json({ message: 'No new tracks' });
@@ -77,21 +69,22 @@ sync.post('/recent', async (c) => {
       await db.insert(artists).values(newArtists).onConflictDoNothing();
     }
     
-    // Upsert tracks — update imageUrl if we now have it
+    // Upsert tracks — always update imageUrl so missing images get backfilled
     if (newTracks.length > 0) {
       await db.insert(tracks).values(newTracks).onConflictDoUpdate({
         target: tracks.spotifyTrackId,
         set: {
-          imageUrl: sql`COALESCE(EXCLUDED.image_url, tracks.image_url)`,
+          // In ON CONFLICT, reference the existing column without table prefix
+          imageUrl: sql`COALESCE(EXCLUDED.image_url, image_url)`,
         },
       });
     }
 
-    // Enrich artists with profile images from Spotify (batch, max 50 per call)
-    const artistIdsToEnrich = newArtists.map(a => a.spotifyArtistId);
-    if (artistIdsToEnrich.length > 0) {
+    // Enrich ALL artists in this sync batch with profile images from Spotify
+    const allArtistIds = [...new Set(newArtists.map(a => a.spotifyArtistId))];
+    if (allArtistIds.length > 0) {
       const artistRes = await fetch(
-        `https://api.spotify.com/v1/artists?ids=${artistIdsToEnrich.slice(0, 50).join(',')}`,
+        `https://api.spotify.com/v1/artists?ids=${allArtistIds.slice(0, 50).join(',')}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (artistRes.ok) {
