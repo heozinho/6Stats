@@ -4,6 +4,7 @@ import { getDb } from '../db';
 import { getValidSpotifyToken, getRecentlyPlayed } from '../services/spotify';
 import { tracks, artists, listeningEvents } from '../db/schema';
 import { eq, desc } from 'drizzle-orm';
+import { runAggregation } from '../crons/aggregate';
 
 export const sync = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 
@@ -82,6 +83,9 @@ sync.post('/recent', async (c) => {
       // Our ID is UUID, but Spotify data might overlap. A composite unique key in db would be safer.
       await db.insert(listeningEvents).values(newEvents).onConflictDoNothing();
     }
+
+    // Run aggregation so stats are immediately available for MVP
+    await runAggregation(env);
 
     return c.json({ message: 'Sync complete', synced: newEvents.length });
   } catch (err: any) {

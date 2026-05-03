@@ -1,7 +1,7 @@
 import { Bindings } from '../types';
 import { getDb } from '../db';
 import { listeningEvents, dailyUserStats, dailyTrackStats, dailyArtistStats, tracks } from '../db/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 
 export async function runAggregation(env: Bindings) {
   const db = getDb(env.DATABASE_URL);
@@ -66,8 +66,8 @@ export async function runAggregation(env: Bindings) {
       await tx.insert(dailyUserStats).values(stats).onConflictDoUpdate({
         target: [dailyUserStats.userId, dailyUserStats.date],
         set: {
-          totalMs: stats.totalMs,
-          totalPlays: stats.totalPlays,
+          totalMs: sql`${dailyUserStats.totalMs} + ${stats.totalMs}`,
+          totalPlays: sql`${dailyUserStats.totalPlays} + ${stats.totalPlays}`,
         }
       });
     }
@@ -77,8 +77,8 @@ export async function runAggregation(env: Bindings) {
       await tx.insert(dailyTrackStats).values(stats).onConflictDoUpdate({
         target: [dailyTrackStats.userId, dailyTrackStats.date, dailyTrackStats.spotifyTrackId],
         set: {
-          msPlayed: stats.msPlayed,
-          playCount: stats.playCount,
+          msPlayed: sql`${dailyTrackStats.msPlayed} + ${stats.msPlayed}`,
+          playCount: sql`${dailyTrackStats.playCount} + ${stats.playCount}`,
         }
       });
     }
@@ -88,8 +88,8 @@ export async function runAggregation(env: Bindings) {
       await tx.insert(dailyArtistStats).values(stats).onConflictDoUpdate({
         target: [dailyArtistStats.userId, dailyArtistStats.date, dailyArtistStats.spotifyArtistId],
         set: {
-          msPlayed: stats.msPlayed,
-          playCount: stats.playCount,
+          msPlayed: sql`${dailyArtistStats.msPlayed} + ${stats.msPlayed}`,
+          playCount: sql`${dailyArtistStats.playCount} + ${stats.playCount}`,
         }
       });
     }
