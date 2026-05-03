@@ -35,13 +35,13 @@ stats.get('/top-tracks', async (c) => {
   const env = c.env;
   const db = getDb(env.DATABASE_URL);
 
-  // Example: top tracks all time by aggregating daily stats
-  // In a real scenario we'd do a group by
-  // For simplicity we just return some data
   const result = await db.select({
     trackId: dailyTrackStats.spotifyTrackId,
     name: tracks.name,
+    imageUrl: tracks.imageUrl,
+    artistId: tracks.artistId,
     playCount: dailyTrackStats.playCount,
+    msPlayed: dailyTrackStats.msPlayed,
   })
     .from(dailyTrackStats)
     .innerJoin(tracks, eq(dailyTrackStats.spotifyTrackId, tracks.spotifyTrackId))
@@ -60,7 +60,10 @@ stats.get('/top-artists', async (c) => {
   const result = await db.select({
     artistId: dailyArtistStats.spotifyArtistId,
     name: artists.name,
+    imageUrl: artists.imageUrl,
+    genres: artists.genres,
     playCount: dailyArtistStats.playCount,
+    msPlayed: dailyArtistStats.msPlayed,
   })
     .from(dailyArtistStats)
     .innerJoin(artists, eq(dailyArtistStats.spotifyArtistId, artists.spotifyArtistId))

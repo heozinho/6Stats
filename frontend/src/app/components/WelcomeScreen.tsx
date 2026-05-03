@@ -6,7 +6,7 @@ interface WelcomeScreenProps {
   onConnect: () => void;
 }
 
-export function WelcomeScreen({ onConnect }: WelcomeScreenProps) {
+export function WelcomeScreen({ onConnect: _onConnect }: WelcomeScreenProps) {
   const [showStats, setShowStats] = useState(false);
   const controls = useAnimation();
 
