@@ -6,16 +6,10 @@
   "compatibility_flags": [
     "nodejs_compat"
   ],
-  "r2_buckets": [
-    {
-      "binding": "ARCHIVE_BUCKET",
-      "bucket_name": "music-stats-archive"
-    }
-  ],
   "triggers": {
     "crons": [
       "0 0 * * *",
-      "0 2 * * 0"
+      "0 2 1 * *"
     ]
   }
 }
