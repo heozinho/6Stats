@@ -16,7 +16,6 @@ async function chunkArr<T>(arr: T[], size: number): Promise<T[][]> {
   return chunks;
 }
 
-// Refresh user token (this we know works for recently-played)
 async function getFreshUserToken(): Promise<string> {
   const tokens = await db.select().from(schema.spotifyTokens).limit(1);
   if (!tokens.length) throw new Error('No token found in DB');
@@ -33,10 +32,6 @@ async function getFreshUserToken(): Promise<string> {
 
   if (!res.ok) throw new Error(`Token refresh failed: ${await res.text()}`);
   const data: any = await res.json();
-  await db.update(schema.spotifyTokens)
-    .set({ accessTokenEncrypted: data.access_token, expiresAt: new Date(Date.now() + data.expires_in * 1000) })
-    .where(eq(schema.spotifyTokens.userId, userId));
-  console.log('✅ User token refreshed');
   return data.access_token;
 }
 
@@ -44,54 +39,35 @@ async function main() {
   const token = await getFreshUserToken();
   const headers = { Authorization: `Bearer ${token}` };
 
-  // Fetch recently-played which includes full album.images array
-  // This endpoint is allowed by our scopes (user-read-recently-played)
-  console.log('\nFetching recently played with full track data...');
-  const res = await fetch('https://api.spotify.com/v1/me/player/recently-played?limit=50', { headers });
-  if (!res.ok) throw new Error(`recently-played failed: ${res.status} ${await res.text()}`);
+  console.log('Fetching artists with missing imageUrl...');
+  const artistsToFix = await db.select({
+    spotifyArtistId: schema.artists.spotifyArtistId,
+    name: schema.artists.name,
+  }).from(schema.artists).where(isNull(schema.artists.imageUrl));
 
-  const data: any = await res.json();
-  const items = data.items ?? [];
-  console.log(`Got ${items.length} recent plays`);
+  console.log(`Found ${artistsToFix.length} artists to backfill`);
 
-  let tracksUpdated = 0;
   let artistsUpdated = 0;
-  const artistIdsToFetch: string[] = [];
-
-  for (const item of items) {
-    const track = item.track;
-    if (!track) continue;
-
-    // Update track image from album.images (this IS included in recently-played)
-    const albumImageUrl = track.album?.images?.[0]?.url ?? null;
-    if (albumImageUrl && track.id) {
-      await db.update(schema.tracks)
-        .set({ imageUrl: albumImageUrl })
-        .where(eq(schema.tracks.spotifyTrackId, track.id));
-      tracksUpdated++;
+  for (const batch of await chunkArr(artistsToFix.map(a => a.spotifyArtistId), 50)) {
+    const res = await fetch(`https://api.spotify.com/v1/artists?ids=${batch.join(',')}`, { headers });
+    if (!res.ok) {
+        console.error('Artists API error:', res.status, await res.text());
+        // Try singular if batch fails
+        for (const id of batch) {
+            const sRes = await fetch(`https://api.spotify.com/v1/artists/${id}`, { headers });
+            if (sRes.ok) {
+                const sData: any = await sRes.json();
+                const img = sData.images?.[0]?.url;
+                if (img) {
+                    await db.update(schema.artists).set({ imageUrl: img }).where(eq(schema.artists.spotifyArtistId, id));
+                    artistsUpdated++;
+                }
+            }
+        }
+        continue;
     }
-
-    // Collect artist IDs for enrichment
-    for (const artist of track.artists ?? []) {
-      if (artist.id) artistIdsToFetch.push(artist.id);
-    }
-  }
-
-  console.log(`✅ Updated ${tracksUpdated} tracks with album art from recently-played`);
-
-  // Fetch full artist profiles using user token (user-read-recently-played scope allows /artists)
-  const uniqueArtistIds = [...new Set(artistIdsToFetch)];
-  console.log(`\nFetching ${uniqueArtistIds.length} artist profiles...`);
-
-  for (const batch of await chunkArr(uniqueArtistIds, 50)) {
-    const artistRes = await fetch(`https://api.spotify.com/v1/artists?ids=${batch.join(',')}`, { headers });
-    console.log(`  Artists batch status: ${artistRes.status}`);
-    if (!artistRes.ok) {
-      console.error('  Error:', await artistRes.text());
-      continue;
-    }
-    const artistData: any = await artistRes.json();
-    for (const artist of artistData.artists ?? []) {
+    const data: any = await res.json();
+    for (const artist of data.artists ?? []) {
       const img = artist?.images?.[0]?.url;
       if (img) {
         await db.update(schema.artists)
@@ -101,10 +77,9 @@ async function main() {
       }
     }
   }
+  console.log(`✅ Updated ${artistsUpdated}/${artistsToFix.length} artists with profile photos`);
 
-  console.log(`✅ Updated ${artistsUpdated} artists with profile photos`);
-  console.log('\n🎉 Done!');
   process.exit(0);
 }
 
-main().catch(e => { console.error(e); process.exit(1); });
+main().catch(console.error);

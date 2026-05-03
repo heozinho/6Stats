@@ -80,9 +80,34 @@ sync.post('/recent', async (c) => {
       });
     }
 
-    // Note: /artists endpoint returns 403 in Spotify Development Mode.
-    // Artist images are enriched when the app is approved for Extended Quota.
-    // Tracks already have album art from the recently-played response above.
+    // Enrich artists with profile images from Spotify
+    // Note: We use the User Token here as Client Credentials often 403 in Dev Mode.
+    const allArtistIds = [...new Set(newArtists.map(a => a.spotifyArtistId))];
+    if (allArtistIds.length > 0) {
+      try {
+        const artistRes = await fetch(
+          `https://api.spotify.com/v1/artists?ids=${allArtistIds.slice(0, 50).join(',')}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        
+        if (artistRes.ok) {
+          const artistData: any = await artistRes.json();
+          for (const artist of artistData.artists ?? []) {
+            const imgUrl = artist.images?.[0]?.url ?? null;
+            if (imgUrl) {
+              await db.update(artists)
+                .set({ imageUrl: imgUrl })
+                .where(eq(artists.spotifyArtistId, artist.id));
+            }
+          }
+        } else if (artistRes.status === 403) {
+          // If batch fails, we can try a few top ones individually or skip
+          console.error('Spotify Artists batch API returned 403. Check user allowlist in dashboard.');
+        }
+      } catch (err) {
+        console.error('Failed to enrich artists:', err);
+      }
+    }
     
     // Insert events
     if (newEvents.length > 0) {
