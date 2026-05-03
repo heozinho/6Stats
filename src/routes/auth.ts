@@ -9,7 +9,7 @@ import { sign } from 'hono/jwt';
 export const auth = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 
 auth.post('/spotify/connect', async (c) => {
-  const { code } = await c.req.json();
+  const { code, redirect_uri } = await c.req.json();
   const env = c.env;
 
   if (!code) {
@@ -17,7 +17,7 @@ auth.post('/spotify/connect', async (c) => {
   }
 
   try {
-    const redirectUri = `${env.APP_URL}/auth/callback`; // Should match frontend redirect
+    const redirectUri = redirect_uri || `${env.APP_URL}/auth/callback`; // Fallback to env
     const tokenData = await exchangeCodeForToken(code, redirectUri, env.SPOTIFY_CLIENT_ID, env.SPOTIFY_CLIENT_SECRET);
     
     const profile = await getUserProfile(tokenData.access_token);
