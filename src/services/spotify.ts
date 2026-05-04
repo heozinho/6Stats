@@ -1,3 +1,6 @@
+import { spotifyTokens } from '../db/schema';
+import { eq } from 'drizzle-orm';
+
 const SPOTIFY_API_URL = 'https://api.spotify.com/v1';
 const SPOTIFY_ACCOUNTS_URL = 'https://accounts.spotify.com/api/token';
 
@@ -109,28 +112,32 @@ export async function getRecentlyPlayed(accessToken: string, limit = 50, after?:
 }
 
 export async function getValidSpotifyToken(userId: string, db: any, env: any) {
-  // We need to import schema, but to avoid circular deps we pass db
-  // This is a simplified version, in a real app we'd use full Drizzle types
   const result = await db.query.spotifyTokens.findFirst({
-    where: (tokens: any, { eq }: any) => eq(tokens.userId, userId),
+    where: (tokens: any, { eq: eqFn }: any) => eqFn(tokens.userId, userId),
   });
 
   if (!result) {
     throw new Error('Spotify connected account not found');
   }
 
-  if (new Date() >= new Date(result.expiresAt)) {
-    // Refresh token
-    const newTokens = await refreshAccessToken(result.refreshTokenEncrypted, env.SPOTIFY_CLIENT_ID, env.SPOTIFY_CLIENT_SECRET);
-    
-    const expiresAt = new Date(Date.now() + newTokens.expires_in * 1000);
-    const updated = await db.update(require('../db/schema').spotifyTokens).set({
-      accessTokenEncrypted: newTokens.access_token,
-      expiresAt,
-    }).where(require('drizzle-orm').eq(require('../db/schema').spotifyTokens.userId, userId)).returning();
-    
-    return updated[0].accessTokenEncrypted;
+  // Token still valid — return it directly
+  if (new Date() < new Date(result.expiresAt)) {
+    return result.accessTokenEncrypted;
   }
 
-  return result.accessTokenEncrypted;
+  // Token expired — refresh it
+  const newTokens = await refreshAccessToken(
+    result.refreshTokenEncrypted,
+    env.SPOTIFY_CLIENT_ID,
+    env.SPOTIFY_CLIENT_SECRET,
+  );
+
+  const expiresAt = new Date(Date.now() + newTokens.expires_in * 1000);
+
+  await db
+    .update(spotifyTokens)
+    .set({ accessTokenEncrypted: newTokens.access_token, expiresAt })
+    .where(eq(spotifyTokens.userId, userId));
+
+  return newTokens.access_token;
 }
