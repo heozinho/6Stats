@@ -1,6 +1,7 @@
 import { motion } from 'motion/react';
 import { Clock, TrendingUp, Share2, ChevronRight, RefreshCw, Music, Mic2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { AudioDNA } from './AudioDNA';
 
 interface DashboardProps {
   backendUrl: string;
@@ -9,6 +10,9 @@ interface DashboardProps {
   syncing: boolean;
   onSync: () => void;
   onViewStatCard: (stats: { todayStats: any; topTracks: any[]; topArtists: any[] }) => void;
+  onBpmChange: (bpm: number) => void;
+  onHistoryChange: (history: any[]) => void;
+  history: any[];
 }
 
 const colors = ['#ff6b35', '#ffd23f', '#4ecdc4', '#f4a261', '#95e1d3'];
@@ -31,7 +35,7 @@ function timeSince(ts: number): string {
   return `${mins} mins ago`;
 }
 
-export function Dashboard({ backendUrl, getHeaders, lastSynced, syncing, onSync, onViewStatCard }: DashboardProps) {
+export function Dashboard({ backendUrl, getHeaders, lastSynced, syncing, onSync, onViewStatCard, onBpmChange, onHistoryChange, history }: DashboardProps) {
   const [activeTab, setActiveTab] = useState<'today' | 'week'>('today');
   const [loading, setLoading] = useState(true);
 
@@ -49,7 +53,7 @@ export function Dashboard({ backendUrl, getHeaders, lastSynced, syncing, onSync,
 
   const fetchStats = async () => {
     try {
-      const [todayRes, todayTracksRes, todayArtistsRes, weekRes, weekTracksRes, weekArtistsRes] =
+      const [todayRes, todayTracksRes, todayArtistsRes, weekRes, weekTracksRes, weekArtistsRes, historyRes] =
         await Promise.all([
           fetch(`${backendUrl}/stats/today?tz=${tz}`,                          { headers: getHeaders() }),
           fetch(`${backendUrl}/stats/top-tracks?tz=${tz}&period=today`,        { headers: getHeaders() }),
@@ -57,23 +61,35 @@ export function Dashboard({ backendUrl, getHeaders, lastSynced, syncing, onSync,
           fetch(`${backendUrl}/stats/week?tz=${tz}`,                           { headers: getHeaders() }),
           fetch(`${backendUrl}/stats/top-tracks?tz=${tz}&period=week`,         { headers: getHeaders() }),
           fetch(`${backendUrl}/stats/top-artists?tz=${tz}&period=week`,        { headers: getHeaders() }),
+          fetch(`${backendUrl}/stats/history?limit=50`,                        { headers: getHeaders() }),
         ]);
 
-      const [tDay, tTracks, tArtists, tWeek, wTracks, wArtists] = await Promise.all([
+      const [tDay, tTracks, tArtists, tWeek, wTracks, wArtists, hRecent] = await Promise.all([
         todayRes.json(),
         todayTracksRes.json(),
         todayArtistsRes.json(),
         weekRes.json(),
         weekTracksRes.json(),
         weekArtistsRes.json(),
+        historyRes.json(),
       ]);
 
+      const history = hRecent.history || [];
+      
       setTodayStats(tDay);
       setTodayTracks(tTracks.topTracks  || []);
       setTodayArtists(tArtists.topArtists || []);
       setWeekStats(tWeek);
       setWeekTracks(wTracks.topTracks   || []);
       setWeekArtists(wArtists.topArtists || []);
+      onHistoryChange(history);
+
+      // Calculate Average BPM (Pulse)
+      const tracksWithTempo = history.filter((t: any) => t.tempo && t.tempo > 0);
+      if (tracksWithTempo.length > 0) {
+        const avgBpm = Math.round(tracksWithTempo.reduce((acc: number, t: any) => acc + t.tempo, 0) / tracksWithTempo.length);
+        onBpmChange(avgBpm);
+      }
     } catch (err) {
       console.error('Failed to fetch stats:', err);
     }
@@ -158,8 +174,8 @@ export function Dashboard({ backendUrl, getHeaders, lastSynced, syncing, onSync,
 
       {/* Minutes Listened Hero Card */}
       <motion.div
-        className="relative mb-6 p-8 rounded-3xl overflow-hidden cursor-pointer"
-        style={{ background: 'linear-gradient(135deg, #ff6b35 0%, #ffd23f 100%)' }}
+        className="relative mb-6 p-8 rounded-3xl overflow-hidden cursor-pointer glass"
+        style={{ background: 'linear-gradient(135deg, rgba(255, 107, 53, 0.2) 0%, rgba(255, 210, 63, 0.2) 100%)' }}
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.2 }}
@@ -167,21 +183,21 @@ export function Dashboard({ backendUrl, getHeaders, lastSynced, syncing, onSync,
         onClick={() => onViewStatCard({ todayStats: heroStats, topTracks, topArtists })}
       >
         <div className="absolute top-4 right-4 opacity-70">
-          <Share2 className="w-5 h-5 text-black" />
+          <Share2 className="w-5 h-5 text-foreground" />
         </div>
         <div className="flex items-center gap-3 mb-3">
-          <Clock className="w-6 h-6 text-black/80" />
-          <span className="text-black/80 font-semibold">Minutes Listened</span>
+          <Clock className="w-6 h-6 text-foreground/80" />
+          <span className="text-foreground/80 font-semibold">Minutes Listened</span>
         </div>
         <motion.div
-          className="text-7xl font-black text-black mb-2 tabular-nums"
+          className="text-7xl font-black text-foreground mb-2 tabular-nums"
           key={minutesListened}
           initial={{ scale: 1.1, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
         >
           {minutesListened.toLocaleString()}
         </motion.div>
-        <div className="flex items-center gap-2 text-black/70">
+        <div className="flex items-center gap-2 text-foreground/70">
           <TrendingUp className="w-4 h-4" />
           <span className="text-sm">
             {totalPlays} play{totalPlays !== 1 ? 's' : ''} {isWeek ? 'this week' : 'today'}
@@ -190,6 +206,16 @@ export function Dashboard({ backendUrl, getHeaders, lastSynced, syncing, onSync,
             )}
           </span>
         </div>
+      </motion.div>
+      
+      {/* Audio DNA Visualization */}
+      <motion.div
+        className="mb-10"
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: 0.25 }}
+      >
+        <AudioDNA history={history} />
       </motion.div>
 
       {/* Top Tracks */}
@@ -217,7 +243,7 @@ export function Dashboard({ backendUrl, getHeaders, lastSynced, syncing, onSync,
               return (
                 <motion.div
                   key={track.trackId}
-                  className="bg-white/5 rounded-2xl flex items-center gap-4 p-3 pr-5 hover:bg-white/10 transition-all group cursor-pointer"
+                  className="bg-white/5 glass rounded-2xl flex items-center gap-4 p-3 pr-5 hover:bg-white/10 transition-all group cursor-pointer"
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.3 + index * 0.06 }}
@@ -272,7 +298,7 @@ export function Dashboard({ backendUrl, getHeaders, lastSynced, syncing, onSync,
               return (
                 <motion.div
                   key={artist.artistId}
-                  className="bg-white/5 rounded-2xl overflow-hidden cursor-pointer hover:bg-white/10 transition-all group relative"
+                  className="bg-white/5 glass rounded-2xl overflow-hidden cursor-pointer hover:bg-white/10 transition-all group relative"
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.8 + index * 0.08 }}

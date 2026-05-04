@@ -111,6 +111,24 @@ export async function getRecentlyPlayed(accessToken: string, limit = 50, after?:
   }>;
 }
 
+export async function getAudioFeatures(accessToken: string, trackIds: string[]) {
+  const url = new URL(`${SPOTIFY_API_URL}/audio-features`);
+  url.searchParams.append('ids', trackIds.join(','));
+
+  const response = await fetch(url.toString(), {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch audio features');
+  }
+
+  const data = await response.json() as { audio_features: any[] };
+  return data.audio_features;
+}
+
 export async function getValidSpotifyToken(userId: string, db: any, env: any) {
   console.log('[getValidSpotifyToken] fetching token for', userId);
 

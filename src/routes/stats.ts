@@ -153,6 +153,7 @@ stats.get('/history', async (c) => {
     imageUrl:   tracks.imageUrl,
     artistId:   tracks.artistId,
     artistName: artists.name,
+    tempo:      tracks.tempo,
   })
     .from(listeningEvents)
     .innerJoin(tracks,  eq(listeningEvents.spotifyTrackId, tracks.spotifyTrackId))

@@ -22,6 +22,7 @@ export const tracks = pgTable('tracks', {
   albumId: text('album_id'),
   durationMs: integer('duration_ms').notNull(),
   imageUrl: text('image_url'),
+  tempo: integer('tempo'),
 });
 
 export const artists = pgTable('artists', {

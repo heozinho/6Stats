@@ -3,35 +3,52 @@
 
 :root {
   --font-size: 16px;
-  --background: #0d0d0f;
+  --background: #050505;
   --foreground: #ffffff;
-  --card: #1a1a1d;
+  --card: rgba(255, 255, 255, 0.03);
   --card-foreground: #ffffff;
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
+  --popover: #111111;
+  --popover-foreground: #ffffff;
   --primary: #ff6b35;
   --primary-foreground: #000000;
   --secondary: #ffd23f;
   --secondary-foreground: #000000;
-  --muted: #1a1a1d;
+  --muted: rgba(255, 255, 255, 0.05);
   --muted-foreground: #9ca3af;
   --accent: #f4a261;
   --accent-foreground: #000000;
   --destructive: #d4183d;
   --destructive-foreground: #ffffff;
-  --border: rgba(255, 255, 255, 0.1);
+  --border: rgba(255, 255, 255, 0.08);
   --input: transparent;
-  --input-background: #1a1a1d;
+  --input-background: rgba(255, 255, 255, 0.05);
   --switch-background: #cbced4;
   --font-weight-medium: 500;
   --font-weight-normal: 400;
-  --ring: oklch(0.708 0 0);
+  --ring: #ff6b35;
   --chart-1: #ff6b35;
   --chart-2: #ffd23f;
   --chart-3: #4ecdc4;
   --chart-4: #ff8e53;
   --chart-5: #95e1d3;
-  --radius: 1.25rem;
+  --radius: 1.5rem;
+  --glow-1: #ff6b35;
+  --glow-2: #ffd23f;
+  --glow-3: #4ecdc4;
+}
+
+.light {
+  --background: #ffffff;
+  --foreground: #000000;
+  --card: rgba(0, 0, 0, 0.03);
+  --card-foreground: #000000;
+  --popover: #f4f4f4;
+  --popover-foreground: #000000;
+  --muted: rgba(0, 0, 0, 0.05);
+  --muted-foreground: #4b5563;
+  --border: rgba(0, 0, 0, 0.08);
+  --input-background: rgba(0, 0, 0, 0.05);
+  --ring: #ff6b35;
 }
 
 @theme inline {
@@ -44,10 +61,26 @@
 
 @layer base {
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground transition-colors duration-500;
   }
   html {
     font-size: var(--font-size);
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   }
+}
+
+@layer utilities {
+  .glass {
+    @apply backdrop-blur-3xl border border-border;
+  }
+}
+
+@keyframes float {
+  0% { transform: translate(0, 0); }
+  50% { transform: translate(10px, 15px); }
+  100% { transform: translate(0, 0); }
+}
+
+.animate-float {
+  animation: float 10s ease-in-out infinite;
 }

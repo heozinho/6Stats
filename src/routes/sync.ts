@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { Bindings, Variables } from '../types';
 import { getDb } from '../db';
-import { getValidSpotifyToken, getRecentlyPlayed } from '../services/spotify';
+import { getValidSpotifyToken, getRecentlyPlayed, getAudioFeatures } from '../services/spotify';
 import { tracks, artists, listeningEvents } from '../db/schema';
 import { eq, sql } from 'drizzle-orm';
 import { runAggregation } from '../crons/aggregate';
@@ -108,6 +108,28 @@ sync.post('/recent', async (c) => {
       }
     }
     
+    console.log('[sync] step 5: enriching artists');
+    // ... existing artist enrichment ...
+    
+    // NEW: Enrich tracks with Audio Features (Tempo)
+    const trackIdsToEnrich = newTracks.map(t => t.spotifyTrackId);
+    if (trackIdsToEnrich.length > 0) {
+      try {
+        const audioFeatures = await getAudioFeatures(accessToken, trackIdsToEnrich);
+        if (audioFeatures && Array.isArray(audioFeatures)) {
+          for (const feature of audioFeatures) {
+            if (!feature) continue;
+            const track = newTracks.find(t => t.spotifyTrackId === feature.id);
+            if (track) {
+              track.tempo = Math.round(feature.tempo);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('[sync] audio features enrichment failed:', err);
+      }
+    }
+
     console.log('[sync] step 6: inserting', newEvents.length, 'events');
     if (newEvents.length > 0) {
       // Deduplicate events by (userId, trackId, playedAt)

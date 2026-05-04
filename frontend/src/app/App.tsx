@@ -4,6 +4,8 @@ import { WelcomeScreen } from './components/WelcomeScreen';
 import { Dashboard } from './components/Dashboard';
 import { StatCard } from './components/StatCard';
 import { HistoryScreen } from './components/HistoryScreen';
+import { GlowBackground } from './components/GlowBackground';
+import { Moon, Sun } from 'lucide-react';
 
 export interface LiveStats {
   todayStats: any;
@@ -19,6 +21,16 @@ export default function App() {
   const [liveStats, setLiveStats] = useState<LiveStats | null>(null);
   const [lastSynced, setLastSynced] = useState<number>(0);
   const [syncing, setSyncing] = useState(false);
+  const [recentHistory, setRecentHistory] = useState<any[]>([]);
+  const [bpm, setBpm] = useState<number>(120);
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    return (localStorage.getItem('6stats_theme') as 'dark' | 'light') || 'dark';
+  });
+
+  useEffect(() => {
+    document.documentElement.className = theme;
+    localStorage.setItem('6stats_theme', theme);
+  }, [theme]);
 
   const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8788';
   const getHeaders = () => ({ Authorization: `Bearer ${localStorage.getItem('6stats_token')}` });
@@ -127,6 +139,16 @@ export default function App() {
       {/* Main app with tabs */}
       {screen === 'app' && (
         <>
+          <GlowBackground bpm={bpm} />
+          
+          {/* Theme Toggle */}
+          <button
+            onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
+            className="absolute top-6 right-20 z-50 p-3 rounded-full bg-white/5 hover:bg-white/10 glass transition-all"
+          >
+            {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+          </button>
+
           {/* Tab content */}
           <div className="flex-1 overflow-hidden">
             {activeTab === 'dashboard' && (
@@ -136,6 +158,9 @@ export default function App() {
                 lastSynced={lastSynced}
                 syncing={syncing}
                 onSync={triggerSync}
+                onBpmChange={(b) => setBpm(b)}
+                onHistoryChange={(h) => setRecentHistory(h)}
+                history={recentHistory}
                 onViewStatCard={(stats) => {
                   setLiveStats(stats);
                   setShowStatCard(true);
