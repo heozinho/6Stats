@@ -5,6 +5,9 @@ import { Music, History, RefreshCw } from 'lucide-react';
 interface HistoryScreenProps {
   backendUrl: string;
   getHeaders: () => Record<string, string>;
+  lastSynced: number;
+  syncing: boolean;
+  onSync: () => void;
 }
 
 interface HistoryEntry {
@@ -55,7 +58,7 @@ function groupByDate(entries: HistoryEntry[]) {
   return groups;
 }
 
-export function HistoryScreen({ backendUrl, getHeaders }: HistoryScreenProps) {
+export function HistoryScreen({ backendUrl, getHeaders, lastSynced, syncing, onSync }: HistoryScreenProps) {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
@@ -79,8 +82,8 @@ export function HistoryScreen({ backendUrl, getHeaders }: HistoryScreenProps) {
     }
   }, [backendUrl]);
 
-  // Initial load
-  useEffect(() => { fetchPage(0, true); }, []);
+  // Re-fetch from page 0 whenever the app-level sync completes
+  useEffect(() => { fetchPage(0, true); }, [lastSynced]);
 
   // Infinite scroll — observe the loader div
   useEffect(() => {
@@ -119,10 +122,12 @@ export function HistoryScreen({ backendUrl, getHeaders }: HistoryScreenProps) {
             <p className="text-gray-400 text-sm mt-0.5">{history.length} plays tracked</p>
           </div>
           <button
-            onClick={() => fetchPage(0, true)}
-            className="p-3 rounded-full bg-white/5 hover:bg-white/10 transition-colors"
+            onClick={onSync}
+            disabled={syncing}
+            title="Sync latest plays"
+            className="p-3 rounded-full bg-white/5 hover:bg-white/10 transition-colors disabled:opacity-40"
           >
-            <RefreshCw className="w-4 h-4 text-gray-400" />
+            <RefreshCw className={`w-4 h-4 text-gray-400 ${syncing ? 'animate-spin' : ''}`} />
           </button>
         </div>
       </motion.div>

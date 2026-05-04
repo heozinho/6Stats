@@ -7,6 +7,7 @@ import { sync } from './routes/sync';
 import { stats } from './routes/stats';
 import { runAggregation } from './crons/aggregate';
 import { runArchiving } from './crons/archive';
+import { syncAllUsers } from './crons/syncAll';
 
 const app = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 
@@ -51,10 +52,10 @@ export default {
   
   // Cloudflare Scheduled Worker handler
   async scheduled(event: ScheduledEvent, env: Bindings, ctx: ExecutionContext) {
-    if (event.cron === '0 0 * * *') { // Every midnight
-      ctx.waitUntil(runAggregation(env));
+    if (event.cron === '0 0 * * *') { // Every midnight — sync all users + aggregate
+      ctx.waitUntil(syncAllUsers(env));
     }
-    if (event.cron === '0 2 * * 0') { // Every Sunday at 2 AM
+    if (event.cron === '0 2 * * 0') { // Every Sunday at 2 AM — archive old events
       ctx.waitUntil(runArchiving(env));
     }
   }

@@ -5,6 +5,9 @@ import { useState, useEffect } from 'react';
 interface DashboardProps {
   backendUrl: string;
   getHeaders: () => Record<string, string>;
+  lastSynced: number;
+  syncing: boolean;
+  onSync: () => void;
   onViewStatCard: (stats: { todayStats: any; topTracks: any[]; topArtists: any[] }) => void;
 }
 
@@ -17,10 +20,9 @@ function msToReadable(ms: number) {
   return `${Math.floor(mins / 60)}h ${mins % 60}m`;
 }
 
-export function Dashboard({ backendUrl, getHeaders, onViewStatCard }: DashboardProps) {
+export function Dashboard({ backendUrl, getHeaders, lastSynced, syncing, onSync, onViewStatCard }: DashboardProps) {
   const [activeTab, setActiveTab] = useState<'today' | 'week'>('today');
   const [loading, setLoading] = useState(true);
-  const [syncing, setSyncing] = useState(false);
   const [todayStats, setTodayStats] = useState<any>(null);
   const [topTracks, setTopTracks] = useState<any[]>([]);
   const [topArtists, setTopArtists] = useState<any[]>([]);
@@ -45,25 +47,14 @@ export function Dashboard({ backendUrl, getHeaders, onViewStatCard }: DashboardP
     }
   };
 
-  const handleSync = async () => {
-    setSyncing(true);
-    try {
-      await fetch(`${backendUrl}/sync/recent`, { method: 'POST', headers: getHeaders() });
-      await fetchStats();
-    } catch (err) {
-      console.error('Sync failed:', err);
-    } finally {
-      setSyncing(false);
-    }
-  };
-
+  // Re-fetch stats whenever the app-level sync completes (lastSynced changes)
   useEffect(() => {
     (async () => {
       setLoading(true);
-      await handleSync();
+      await fetchStats();
       setLoading(false);
     })();
-  }, []);
+  }, [lastSynced]);
 
   if (loading) {
     return (
@@ -93,7 +84,7 @@ export function Dashboard({ backendUrl, getHeaders, onViewStatCard }: DashboardP
           <p className="text-gray-400 text-sm">Celebrate your music journey</p>
         </div>
         <button
-          onClick={handleSync}
+          onClick={onSync}
           disabled={syncing}
           title="Sync latest plays"
           className="p-3 rounded-full bg-white/5 hover:bg-white/10 transition-colors disabled:opacity-40"

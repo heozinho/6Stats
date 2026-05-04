@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { LayoutDashboard, History } from 'lucide-react';
 import { WelcomeScreen } from './components/WelcomeScreen';
 import { Dashboard } from './components/Dashboard';
@@ -17,9 +17,24 @@ export default function App() {
   const [showStatCard, setShowStatCard] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [liveStats, setLiveStats] = useState<LiveStats | null>(null);
+  const [lastSynced, setLastSynced] = useState<number>(0);
+  const [syncing, setSyncing] = useState(false);
 
   const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8788';
   const getHeaders = () => ({ Authorization: `Bearer ${localStorage.getItem('6stats_token')}` });
+
+  // App-level sync — called once on login and whenever the user taps "Sync Now"
+  const triggerSync = useCallback(async () => {
+    setSyncing(true);
+    try {
+      await fetch(`${backendUrl}/sync/recent`, { method: 'POST', headers: getHeaders() });
+      setLastSynced(Date.now());
+    } catch (err) {
+      console.error('Sync failed:', err);
+    } finally {
+      setSyncing(false);
+    }
+  }, [backendUrl]);
 
   useEffect(() => {
     const token = localStorage.getItem('6stats_token');
@@ -66,6 +81,13 @@ export default function App() {
     }
   }, []);
 
+  // Auto-sync when app becomes visible (login or tab focus)
+  useEffect(() => {
+    if (screen === 'app') {
+      triggerSync();
+    }
+  }, [screen]);
+
   return (
     <div className="size-full bg-background text-foreground overflow-hidden flex flex-col">
       {/* Error toast */}
@@ -100,6 +122,9 @@ export default function App() {
               <Dashboard
                 backendUrl={backendUrl}
                 getHeaders={getHeaders}
+                lastSynced={lastSynced}
+                syncing={syncing}
+                onSync={triggerSync}
                 onViewStatCard={(stats) => {
                   setLiveStats(stats);
                   setShowStatCard(true);
@@ -110,6 +135,9 @@ export default function App() {
               <HistoryScreen
                 backendUrl={backendUrl}
                 getHeaders={getHeaders}
+                lastSynced={lastSynced}
+                syncing={syncing}
+                onSync={triggerSync}
               />
             )}
           </div>
