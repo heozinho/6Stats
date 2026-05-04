@@ -19,11 +19,6 @@ stats.get('/today', async (c) => {
   const start = getStartOfDayUTC(tz);
   const end   = getEndOfDayUTC(tz);
 
-  const redis = getRedis(env.UPSTASH_REDIS_REST_URL, env.UPSTASH_REDIS_REST_TOKEN);
-  const cacheKey = `stats:today:${userId}:${start.toISOString()}`;
-  const cached = await getCache(redis, cacheKey);
-  if (cached) return c.json(cached);
-
   const db = getDb(env.DATABASE_URL);
 
   const rows = await db.select({ durationMs: listeningEvents.durationMs })
@@ -37,9 +32,7 @@ stats.get('/today', async (c) => {
   const totalMs    = rows.reduce((acc, r) => acc + (r.durationMs ?? 0), 0);
   const totalPlays = rows.length;
 
-  const data = { totalMs, totalPlays };
-  await setCache(redis, cacheKey, data, 120); // 2-min cache keyed to day boundary
-  return c.json(data);
+  return c.json({ totalMs, totalPlays });
 });
 
 // ─── /stats/top-tracks ───────────────────────────────────────────────────────
