@@ -73,7 +73,7 @@ sync.post('/recent', async (c) => {
       await db.insert(tracks).values(newTracks).onConflictDoUpdate({
         target: tracks.spotifyTrackId,
         set: {
-          imageUrl: sql`COALESCE(EXCLUDED.image_url, image_url)`,
+          imageUrl: sql`COALESCE(EXCLUDED.image_url, tracks.image_url)`,
         },
       });
     }
@@ -120,7 +120,7 @@ sync.post('/recent', async (c) => {
     return c.json({ message: 'Sync complete', synced: newEvents.length });
   } catch (err: any) {
     console.error('[sync] FAILED:', err.message, err.stack);
-    return c.json({ error: err.message, stack: err.stack }, 500);
+    return c.json({ error: err.message, cause: err.cause ? err.cause.message : 'no cause', stack: err.stack }, 500);
   }
 
 });

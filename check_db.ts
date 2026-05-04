@@ -2,7 +2,7 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import * as schema from './src/db/schema';
 
-const connectionString = 'postgresql://postgres:Welovepurple12%3F@db.eosghccvgazzqoazbnjd.supabase.co:5432/postgres';
+const connectionString = 'postgresql://postgres:Welovepurple12%3F@ipv4.db.eosghccvgazzqoazbnjd.supabase.co:5432/postgres';
 const client = postgres(connectionString);
 const db = drizzle(client, { schema });
 

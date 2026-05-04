@@ -94,10 +94,12 @@ export async function runAggregation(env: Bindings) {
       });
     }
 
-    // Mark as processed
+    // Mark all as processed in a single query instead of N individual updates
     const idsToMark = unprocessed.map(e => e.id);
-    for (const id of idsToMark) {
-      await tx.update(listeningEvents).set({ processed: true }).where(eq(listeningEvents.id, id));
+    if (idsToMark.length > 0) {
+      await tx.execute(
+        sql`UPDATE listening_events SET processed = true WHERE id = ANY(ARRAY[${sql.join(idsToMark.map(id => sql`${id}`), sql`, `)}])`
+      );
     }
   });
 }
