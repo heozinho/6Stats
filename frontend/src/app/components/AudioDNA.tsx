@@ -21,7 +21,7 @@ export function AudioDNA({ history }: AudioDNAProps) {
   const dnaSegments = useMemo(() => {
     // Reverse history to show oldest to newest (left to right)
     const sorted = [...history].reverse();
-    return sorted.map((event, idx) => ({
+    return sorted.map((event) => ({
       id: event.id,
       color: getColor(event.spotifyTrackId),
       // Random width variations for that "DNA/Barcode" look
