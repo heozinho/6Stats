@@ -102,7 +102,9 @@ export async function syncAllUsers(env: Bindings) {
       }
 
       if (newEvents.length > 0) {
-        await db.insert(listeningEvents).values(newEvents).onConflictDoNothing();
+        // Deduplicate events by (userId, trackId, playedAt)
+        const uniqueEvents = Array.from(new Map(newEvents.map(e => [`${e.userId}-${e.spotifyTrackId}-${e.playedAt.getTime()}`, e])).values());
+        await db.insert(listeningEvents).values(uniqueEvents).onConflictDoNothing();
       }
 
       console.log(`[syncAll] User ${user.id}: synced ${newEvents.length} event(s)`);

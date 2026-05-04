@@ -110,7 +110,9 @@ sync.post('/recent', async (c) => {
     
     console.log('[sync] step 6: inserting', newEvents.length, 'events');
     if (newEvents.length > 0) {
-      await db.insert(listeningEvents).values(newEvents).onConflictDoNothing();
+      // Deduplicate events by (userId, trackId, playedAt)
+      const uniqueEvents = Array.from(new Map(newEvents.map(e => [`${e.userId}-${e.spotifyTrackId}-${e.playedAt.getTime()}`, e])).values());
+      await db.insert(listeningEvents).values(uniqueEvents).onConflictDoNothing();
     }
 
     console.log('[sync] step 7: running aggregation');
