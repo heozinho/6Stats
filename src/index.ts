@@ -55,7 +55,7 @@ export default {
     if (event.cron === '0 0 * * *') { // Every midnight — sync all users + aggregate
       ctx.waitUntil(syncAllUsers(env));
     }
-    if (event.cron === '0 2 * * 0') { // Every Sunday at 2 AM — archive old events
+    if (event.cron === '0 2 * * 7') { // Every Sunday at 2 AM — archive old events
       ctx.waitUntil(runArchiving(env));
     }
   }
