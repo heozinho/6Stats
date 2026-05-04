@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { Bindings, Variables } from '../types';
 import { getDb } from '../db';
 import { dailyUserStats, dailyTrackStats, dailyArtistStats, tracks, artists, listeningEvents } from '../db/schema';
-import { eq, desc, and, gte } from 'drizzle-orm';
+import { eq, desc, and } from 'drizzle-orm';
 import { getRedis, getCache, setCache } from '../services/cache';
 
 export const stats = new Hono<{ Bindings: Bindings; Variables: Variables }>();
@@ -34,6 +34,7 @@ stats.get('/top-tracks', async (c) => {
   const userId = c.get('userId');
   const env = c.env;
   const db = getDb(env.DATABASE_URL);
+  const todayDate = new Date().toISOString().split('T')[0];
 
   const result = await db.select({
     trackId: dailyTrackStats.spotifyTrackId,
@@ -45,7 +46,7 @@ stats.get('/top-tracks', async (c) => {
   })
     .from(dailyTrackStats)
     .innerJoin(tracks, eq(dailyTrackStats.spotifyTrackId, tracks.spotifyTrackId))
-    .where(eq(dailyTrackStats.userId, userId))
+    .where(and(eq(dailyTrackStats.userId, userId), eq(dailyTrackStats.date, todayDate)))
     .orderBy(desc(dailyTrackStats.playCount))
     .limit(10);
 
@@ -56,6 +57,7 @@ stats.get('/top-artists', async (c) => {
   const userId = c.get('userId');
   const env = c.env;
   const db = getDb(env.DATABASE_URL);
+  const todayDate = new Date().toISOString().split('T')[0];
 
   const result = await db.select({
     artistId: dailyArtistStats.spotifyArtistId,
@@ -67,7 +69,7 @@ stats.get('/top-artists', async (c) => {
   })
     .from(dailyArtistStats)
     .innerJoin(artists, eq(dailyArtistStats.spotifyArtistId, artists.spotifyArtistId))
-    .where(eq(dailyArtistStats.userId, userId))
+    .where(and(eq(dailyArtistStats.userId, userId), eq(dailyArtistStats.date, todayDate)))
     .orderBy(desc(dailyArtistStats.playCount))
     .limit(10);
 

@@ -5,6 +5,7 @@ import { getValidSpotifyToken, getRecentlyPlayed } from '../services/spotify';
 import { tracks, artists, listeningEvents } from '../db/schema';
 import { eq, sql } from 'drizzle-orm';
 import { runAggregation } from '../crons/aggregate';
+import { getRedis, deleteCache } from '../services/cache';
 
 export const sync = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 
@@ -117,8 +118,12 @@ sync.post('/recent', async (c) => {
       await db.insert(listeningEvents).values(newEvents).onConflictDoNothing();
     }
 
-    // Run aggregation so stats are immediately available for MVP
+    // Run aggregation so stats are immediately available
     await runAggregation(env);
+
+    // Bust the Redis cache so /stats/today returns fresh data immediately
+    const redis = getRedis(env.UPSTASH_REDIS_REST_URL, env.UPSTASH_REDIS_REST_TOKEN);
+    await deleteCache(redis, `stats:today:${userId}`);
 
     return c.json({ message: 'Sync complete', synced: newEvents.length });
   } catch (err: any) {
