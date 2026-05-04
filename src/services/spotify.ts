@@ -126,6 +126,7 @@ export async function getAudioFeatures(accessToken: string, trackIds: string[]) 
   }
 
   const data = await response.json() as { audio_features: any[] };
+  if (!data || !data.audio_features) return [];
   return data.audio_features;
 }
 

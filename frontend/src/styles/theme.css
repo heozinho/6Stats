@@ -71,7 +71,7 @@
 
 @layer utilities {
   .glass {
-    @apply backdrop-blur-3xl border border-border;
+    @apply backdrop-blur-xl border border-border;
   }
 }
 

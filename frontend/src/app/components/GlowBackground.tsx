@@ -5,9 +5,9 @@ interface GlowBackgroundProps {
 }
 
 export function GlowBackground({ bpm = 120 }: GlowBackgroundProps) {
-  // Calculate animation duration based on BPM (60 / BPM = seconds per beat)
-  // We'll use a multiple of this for the slow background drift
-  const pulseDuration = 60 / bpm;
+  // Ensure BPM is valid and not zero
+  const safeBpm = Math.max(bpm || 120, 40); 
+  const pulseDuration = 60 / safeBpm;
 
   return (
     <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">

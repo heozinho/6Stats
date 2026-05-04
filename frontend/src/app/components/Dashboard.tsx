@@ -53,45 +53,27 @@ export function Dashboard({ backendUrl, getHeaders, lastSynced, syncing, onSync,
 
   const fetchStats = async () => {
     try {
-      const [todayRes, todayTracksRes, todayArtistsRes, weekRes, weekTracksRes, weekArtistsRes, historyRes] =
-        await Promise.all([
-          fetch(`${backendUrl}/stats/today?tz=${tz}`,                          { headers: getHeaders() }),
-          fetch(`${backendUrl}/stats/top-tracks?tz=${tz}&period=today`,        { headers: getHeaders() }),
-          fetch(`${backendUrl}/stats/top-artists?tz=${tz}&period=today`,       { headers: getHeaders() }),
-          fetch(`${backendUrl}/stats/week?tz=${tz}`,                           { headers: getHeaders() }),
-          fetch(`${backendUrl}/stats/top-tracks?tz=${tz}&period=week`,         { headers: getHeaders() }),
-          fetch(`${backendUrl}/stats/top-artists?tz=${tz}&period=week`,        { headers: getHeaders() }),
-          fetch(`${backendUrl}/stats/history?limit=50`,                        { headers: getHeaders() }),
-        ]);
-
-      const [tDay, tTracks, tArtists, tWeek, wTracks, wArtists, hRecent] = await Promise.all([
-        todayRes.json(),
-        todayTracksRes.json(),
-        todayArtistsRes.json(),
-        weekRes.json(),
-        weekTracksRes.json(),
-        weekArtistsRes.json(),
-        historyRes.json(),
-      ]);
-
-      const history = hRecent.history || [];
+      const res = await fetch(`${backendUrl}/stats/dashboard?tz=${tz}`, { headers: getHeaders() });
+      if (!res.ok) throw new Error('Dashboard fetch failed');
       
-      setTodayStats(tDay);
-      setTodayTracks(tTracks.topTracks  || []);
-      setTodayArtists(tArtists.topArtists || []);
-      setWeekStats(tWeek);
-      setWeekTracks(wTracks.topTracks   || []);
-      setWeekArtists(wArtists.topArtists || []);
-      onHistoryChange(history);
+      const data = await res.json();
+      
+      setTodayStats(data.today);
+      setTodayTracks(data.topTracks.today);
+      setTodayArtists(data.topArtists.today);
+      setWeekStats(data.week);
+      setWeekTracks(data.topTracks.week);
+      setWeekArtists(data.topArtists.week);
+      onHistoryChange(data.history || []);
 
-      // Calculate Average BPM (Pulse)
-      const tracksWithTempo = history.filter((t: any) => t.tempo && t.tempo > 0);
+      // Calculate Average BPM
+      const tracksWithTempo = (data.history || []).filter((t: any) => t.tempo && t.tempo > 0);
       if (tracksWithTempo.length > 0) {
         const avgBpm = Math.round(tracksWithTempo.reduce((acc: number, t: any) => acc + t.tempo, 0) / tracksWithTempo.length);
         onBpmChange(avgBpm);
       }
     } catch (err) {
-      console.error('Failed to fetch stats:', err);
+      console.error('Failed to fetch dashboard:', err);
     }
   };
 
@@ -222,8 +204,9 @@ export function Dashboard({ backendUrl, getHeaders, lastSynced, syncing, onSync,
       <motion.section
         className="mb-8"
         initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-50px" }}
+        transition={{ delay: 0.1 }}
       >
         <h3 className="text-2xl font-extrabold mb-4">
           <span className="bg-gradient-to-r from-orange-400 to-yellow-400 bg-clip-text text-transparent">
@@ -238,7 +221,7 @@ export function Dashboard({ backendUrl, getHeaders, lastSynced, syncing, onSync,
           </div>
         ) : (
           <div className="space-y-3">
-            {topTracks.map((track, index) => {
+        {(topTracks || []).map((track, index) => {
               const accent = getColor(index);
               return (
                 <motion.div
@@ -277,8 +260,9 @@ export function Dashboard({ backendUrl, getHeaders, lastSynced, syncing, onSync,
       {/* Top Artists */}
       <motion.section
         initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.7 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-50px" }}
+        transition={{ delay: 0.1 }}
       >
         <h3 className="text-2xl font-extrabold mb-4">
           <span className="bg-gradient-to-r from-teal-400 to-cyan-400 bg-clip-text text-transparent">
@@ -293,7 +277,7 @@ export function Dashboard({ backendUrl, getHeaders, lastSynced, syncing, onSync,
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-4">
-            {topArtists.map((artist, index) => {
+            {(topArtists || []).map((artist, index) => {
               const accent = getColor(index + 2);
               return (
                 <motion.div

@@ -19,17 +19,19 @@ export function AudioDNA({ history }: AudioDNAProps) {
   };
 
   const dnaSegments = useMemo(() => {
+    if (!history || !Array.isArray(history)) return [];
+    
     // Reverse history to show oldest to newest (left to right)
     const sorted = [...history].reverse();
     return sorted.map((event) => ({
       id: event.id,
-      color: getColor(event.spotifyTrackId),
+      color: getColor(event.spotifyTrackId || 'unknown'),
       // Random width variations for that "DNA/Barcode" look
-      width: 4 + (Math.abs(event.id.charCodeAt(0)) % 12), 
+      width: 4 + (Math.abs((event.id || '0').charCodeAt(0)) % 12), 
     }));
   }, [history]);
 
-  if (dnaSegments.length === 0) return null;
+  if (!dnaSegments || dnaSegments.length === 0) return null;
 
   return (
     <div className="w-full">

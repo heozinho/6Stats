@@ -165,3 +165,41 @@ stats.get('/history', async (c) => {
 
   return c.json({ history: result, page, limit, hasMore: result.length === limit });
 });
+
+// ─── /stats/dashboard (BATCHED) ─────────────────────────────────────────────
+stats.get('/dashboard', async (c) => {
+  const userId = c.get('userId');
+  const env = c.env;
+  const tz = c.req.query('tz') || 'UTC';
+  const db = getDb(env.DATABASE_URL);
+
+  const startDay  = getStartOfDayUTC(tz);
+  const startWeek = getRollingWeekStartUTC(tz);
+  const end       = getEndOfDayUTC(tz);
+
+  // Run all queries in parallel on the database
+  const [todayRows, weekRows, topTracksToday, topTracksWeek, topArtistsToday, topArtistsWeek, history] = await Promise.all([
+    // Today Hero
+    db.select({ durationMs: listeningEvents.durationMs }).from(listeningEvents).where(and(eq(listeningEvents.userId, userId), gte(listeningEvents.playedAt, startDay), lt(listeningEvents.playedAt, end))),
+    // Week Hero
+    db.select({ durationMs: listeningEvents.durationMs }).from(listeningEvents).where(and(eq(listeningEvents.userId, userId), gte(listeningEvents.playedAt, startWeek), lt(listeningEvents.playedAt, end))),
+    // Top Tracks Today
+    db.select({ trackId: tracks.spotifyTrackId, name: tracks.name, imageUrl: tracks.imageUrl, artistId: tracks.artistId, playCount: sql<number>`cast(count(*) as int)` }).from(listeningEvents).innerJoin(tracks, eq(listeningEvents.spotifyTrackId, tracks.spotifyTrackId)).where(and(eq(listeningEvents.userId, userId), gte(listeningEvents.playedAt, startDay), lt(listeningEvents.playedAt, end))).groupBy(listeningEvents.spotifyTrackId, tracks.spotifyTrackId, tracks.name, tracks.imageUrl, tracks.artistId).orderBy(desc(sql`count(*)`)).limit(10),
+    // Top Tracks Week
+    db.select({ trackId: tracks.spotifyTrackId, name: tracks.name, imageUrl: tracks.imageUrl, artistId: tracks.artistId, playCount: sql<number>`cast(count(*) as int)` }).from(listeningEvents).innerJoin(tracks, eq(listeningEvents.spotifyTrackId, tracks.spotifyTrackId)).where(and(eq(listeningEvents.userId, userId), gte(listeningEvents.playedAt, startWeek), lt(listeningEvents.playedAt, end))).groupBy(listeningEvents.spotifyTrackId, tracks.spotifyTrackId, tracks.name, tracks.imageUrl, tracks.artistId).orderBy(desc(sql`count(*)`)).limit(10),
+    // Top Artists Today
+    db.select({ artistId: tracks.artistId, name: artists.name, imageUrl: artists.imageUrl, playCount: sql<number>`cast(count(*) as int)` }).from(listeningEvents).innerJoin(tracks, eq(listeningEvents.spotifyTrackId, tracks.spotifyTrackId)).innerJoin(artists, eq(tracks.artistId, artists.spotifyArtistId)).where(and(eq(listeningEvents.userId, userId), gte(listeningEvents.playedAt, startDay), lt(listeningEvents.playedAt, end))).groupBy(tracks.artistId, artists.spotifyArtistId, artists.name, artists.imageUrl).orderBy(desc(sql`count(*)`)).limit(10),
+    // Top Artists Week
+    db.select({ artistId: tracks.artistId, name: artists.name, imageUrl: artists.imageUrl, playCount: sql<number>`cast(count(*) as int)` }).from(listeningEvents).innerJoin(tracks, eq(listeningEvents.spotifyTrackId, tracks.spotifyTrackId)).innerJoin(artists, eq(tracks.artistId, artists.spotifyArtistId)).where(and(eq(listeningEvents.userId, userId), gte(listeningEvents.playedAt, startWeek), lt(listeningEvents.playedAt, end))).groupBy(tracks.artistId, artists.spotifyArtistId, artists.name, artists.imageUrl).orderBy(desc(sql`count(*)`)).limit(10),
+    // History (DNA)
+    db.select({ id: listeningEvents.id, spotifyTrackId: tracks.spotifyTrackId, tempo: tracks.tempo }).from(listeningEvents).innerJoin(tracks, eq(listeningEvents.spotifyTrackId, tracks.spotifyTrackId)).where(eq(listeningEvents.userId, userId)).orderBy(desc(listeningEvents.playedAt)).limit(50)
+  ]);
+
+  return c.json({
+    today: { totalMs: todayRows.reduce((acc, r) => acc + (r.durationMs ?? 0), 0), totalPlays: todayRows.length },
+    week:  { totalMs: weekRows.reduce((acc, r) => acc + (r.durationMs ?? 0), 0), totalPlays: weekRows.length },
+    topTracks: { today: topTracksToday, week: topTracksWeek },
+    topArtists: { today: topArtistsToday, week: topArtistsWeek },
+    history
+  });
+});
