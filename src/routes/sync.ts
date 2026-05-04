@@ -15,16 +15,17 @@ sync.post('/recent', async (c) => {
   const db = getDb(env.DATABASE_URL);
 
   try {
+    console.log('[sync] step 1: getting valid token for', userId);
     const token = await getValidSpotifyToken(userId, db, env);
     
-    // Always fetch the 50 most recent — deduplication handled by onConflictDoNothing on insert
+    console.log('[sync] step 2: fetching recently played');
     const recent = await getRecentlyPlayed(token, 50);
 
     if (recent.items.length === 0) {
       return c.json({ message: 'No new tracks' });
     }
 
-    // Prepare data
+    console.log('[sync] step 3: got', recent.items.length, 'items, building inserts');
     const newTracks: any[] = [];
     const newArtists: any[] = [];
     const newEvents: any[] = [];
@@ -37,12 +38,9 @@ sync.post('/recent', async (c) => {
           spotifyArtistId: track.artists[0].id,
           name: track.artists[0].name,
           genres: track.artists[0].genres || [],
-          // Artist images aren't included in recently-played; enriched via separate API call if needed.
-          // For now we store null and let the /sync/enrich endpoint fill it in.
         });
       }
 
-      // Pick the best album image (first = largest)
       const albumImageUrl = track.album?.images?.[0]?.url ?? null;
 
       newTracks.push({
@@ -65,24 +63,22 @@ sync.post('/recent', async (c) => {
       });
     }
 
-    // Upsert artists (no image yet — enriched below)
+    console.log('[sync] step 4: upserting', newArtists.length, 'artists');
     if (newArtists.length > 0) {
       await db.insert(artists).values(newArtists).onConflictDoNothing();
     }
     
-    // Upsert tracks — always update imageUrl so missing images get backfilled
+    console.log('[sync] step 5: upserting', newTracks.length, 'tracks');
     if (newTracks.length > 0) {
       await db.insert(tracks).values(newTracks).onConflictDoUpdate({
         target: tracks.spotifyTrackId,
         set: {
-          // In ON CONFLICT, reference the existing column without table prefix
           imageUrl: sql`COALESCE(EXCLUDED.image_url, image_url)`,
         },
       });
     }
 
-    // Enrich artists with profile images from Spotify
-    // Note: We use the User Token here as Client Credentials often 403 in Dev Mode.
+    // Enrich artists with profile images
     const allArtistIds = [...new Set(newArtists.map(a => a.spotifyArtistId))];
     if (allArtistIds.length > 0) {
       try {
@@ -90,7 +86,6 @@ sync.post('/recent', async (c) => {
           `https://api.spotify.com/v1/artists?ids=${allArtistIds.slice(0, 50).join(',')}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        
         if (artistRes.ok) {
           const artistData: any = await artistRes.json();
           for (const artist of artistData.artists ?? []) {
@@ -101,32 +96,31 @@ sync.post('/recent', async (c) => {
                 .where(eq(artists.spotifyArtistId, artist.id));
             }
           }
-        } else if (artistRes.status === 403) {
-          // If batch fails, we can try a few top ones individually or skip
-          console.error('Spotify Artists batch API returned 403. Check user allowlist in dashboard.');
+        } else {
+          console.log('[sync] artist enrich returned', artistRes.status);
         }
       } catch (err) {
-        console.error('Failed to enrich artists:', err);
+        console.error('[sync] artist enrich failed:', err);
       }
     }
     
-    // Insert events
+    console.log('[sync] step 6: inserting', newEvents.length, 'events');
     if (newEvents.length > 0) {
-      // Postgres unique constraint on user+track+playedAt is usually recommended to avoid dupes perfectly
-      // For now, we rely on `after` cursor, but inserting might throw on duplicate ID. 
-      // Our ID is UUID, but Spotify data might overlap. A composite unique key in db would be safer.
       await db.insert(listeningEvents).values(newEvents).onConflictDoNothing();
     }
 
-    // Run aggregation so stats are immediately available
+    console.log('[sync] step 7: running aggregation');
     await runAggregation(env);
 
-    // Bust the Redis cache so /stats/today returns fresh data immediately
+    console.log('[sync] step 8: busting cache');
     const redis = getRedis(env.UPSTASH_REDIS_REST_URL, env.UPSTASH_REDIS_REST_TOKEN);
     await deleteCache(redis, `stats:today:${userId}`);
 
+    console.log('[sync] done');
     return c.json({ message: 'Sync complete', synced: newEvents.length });
   } catch (err: any) {
-    return c.json({ error: err.message }, 500);
+    console.error('[sync] FAILED:', err.message, err.stack);
+    return c.json({ error: err.message, stack: err.stack }, 500);
   }
+
 });

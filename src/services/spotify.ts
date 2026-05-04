@@ -112,20 +112,30 @@ export async function getRecentlyPlayed(accessToken: string, limit = 50, after?:
 }
 
 export async function getValidSpotifyToken(userId: string, db: any, env: any) {
-  const result = await db.query.spotifyTokens.findFirst({
-    where: (tokens: any, { eq: eqFn }: any) => eqFn(tokens.userId, userId),
-  });
+  console.log('[getValidSpotifyToken] fetching token for', userId);
+
+  const rows = await db
+    .select()
+    .from(spotifyTokens)
+    .where(eq(spotifyTokens.userId, userId))
+    .limit(1);
+
+  const result = rows[0];
 
   if (!result) {
     throw new Error('Spotify connected account not found');
   }
 
-  // Token still valid — return it directly
+  console.log('[getValidSpotifyToken] token expiresAt:', result.expiresAt, 'now:', new Date().toISOString());
+
+  // Token still valid
   if (new Date() < new Date(result.expiresAt)) {
+    console.log('[getValidSpotifyToken] token still valid');
     return result.accessTokenEncrypted;
   }
 
   // Token expired — refresh it
+  console.log('[getValidSpotifyToken] token expired, refreshing...');
   const newTokens = await refreshAccessToken(
     result.refreshTokenEncrypted,
     env.SPOTIFY_CLIENT_ID,
@@ -139,5 +149,7 @@ export async function getValidSpotifyToken(userId: string, db: any, env: any) {
     .set({ accessTokenEncrypted: newTokens.access_token, expiresAt })
     .where(eq(spotifyTokens.userId, userId));
 
+  console.log('[getValidSpotifyToken] token refreshed, new expiry:', expiresAt.toISOString());
   return newTokens.access_token;
 }
+
