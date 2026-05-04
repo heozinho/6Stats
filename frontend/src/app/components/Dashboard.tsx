@@ -23,6 +23,14 @@ function msToReadable(ms: number) {
 // Detect user's IANA timezone once
 const USER_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 
+function timeSince(ts: number): string {
+  if (!ts) return '';
+  const mins = Math.floor((Date.now() - ts) / 60000);
+  if (mins < 1) return 'just now';
+  if (mins === 1) return '1 min ago';
+  return `${mins} mins ago`;
+}
+
 export function Dashboard({ backendUrl, getHeaders, lastSynced, syncing, onSync, onViewStatCard }: DashboardProps) {
   const [activeTab, setActiveTab] = useState<'today' | 'week'>('today');
   const [loading, setLoading] = useState(true);
@@ -111,14 +119,19 @@ export function Dashboard({ backendUrl, getHeaders, lastSynced, syncing, onSync,
           <h2 className="text-4xl font-extrabold mb-1">Your Stats</h2>
           <p className="text-gray-400 text-sm">Celebrate your music journey</p>
         </div>
-        <button
-          onClick={onSync}
-          disabled={syncing}
-          title="Sync latest plays"
-          className="p-3 rounded-full bg-white/5 hover:bg-white/10 transition-colors disabled:opacity-40"
-        >
-          <RefreshCw className={`w-5 h-5 text-gray-300 ${syncing ? 'animate-spin' : ''}`} />
-        </button>
+        <div className="flex flex-col items-end gap-1">
+          <button
+            onClick={onSync}
+            disabled={syncing}
+            title="Sync latest plays"
+            className="p-3 rounded-full bg-white/5 hover:bg-white/10 transition-colors disabled:opacity-40"
+          >
+            <RefreshCw className={`w-5 h-5 text-gray-300 ${syncing ? 'animate-spin' : ''}`} />
+          </button>
+          {lastSynced > 0 && (
+            <span className="text-xs text-gray-600">{timeSince(lastSynced)}</span>
+          )}
+        </div>
       </motion.div>
 
       {/* Tab Switcher */}
@@ -172,6 +185,9 @@ export function Dashboard({ backendUrl, getHeaders, lastSynced, syncing, onSync,
           <TrendingUp className="w-4 h-4" />
           <span className="text-sm">
             {totalPlays} play{totalPlays !== 1 ? 's' : ''} {isWeek ? 'this week' : 'today'}
+            {totalPlays === 0 && !isWeek && (
+              <span className="ml-1 opacity-70">· updates after each song finishes</span>
+            )}
           </span>
         </div>
       </motion.div>

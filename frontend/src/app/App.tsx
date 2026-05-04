@@ -88,6 +88,17 @@ export default function App() {
     }
   }, [screen]);
 
+  // Auto-poll every 5 minutes while the app is open so completed plays appear
+  // without needing a manual tap (Spotify only logs plays after the track finishes)
+  useEffect(() => {
+    if (screen !== 'app') return;
+    const interval = setInterval(() => {
+      if (!syncing) triggerSync();
+    }, 5 * 60 * 1000); // 5 minutes
+    return () => clearInterval(interval);
+  }, [screen, syncing, triggerSync]);
+
+
   return (
     <div className="size-full bg-background text-foreground overflow-hidden flex flex-col">
       {/* Error toast */}
