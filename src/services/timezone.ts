@@ -42,3 +42,9 @@ export function getStartOfWeekUTC(tz: string, date = new Date()): Date {
 
   return new Date(start.getTime() - daysFromMonday * 86_400_000);
 }
+
+/** Rolling 7 days including today (Start of today minus 6 days) */
+export function getRollingWeekStartUTC(tz: string, date = new Date()): Date {
+  const start = getStartOfDayUTC(tz, date);
+  return new Date(start.getTime() - 6 * 86_400_000);
+}

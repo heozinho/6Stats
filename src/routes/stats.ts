@@ -4,7 +4,7 @@ import { getDb } from '../db';
 import { tracks, artists, listeningEvents } from '../db/schema';
 import { eq, desc, and, gte, lt, sql } from 'drizzle-orm';
 import { getRedis, getCache, setCache } from '../services/cache';
-import { getStartOfDayUTC, getEndOfDayUTC, getStartOfWeekUTC } from '../services/timezone';
+import { getStartOfDayUTC, getEndOfDayUTC, getRollingWeekStartUTC } from '../services/timezone';
 
 export const stats = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 
@@ -51,7 +51,7 @@ stats.get('/top-tracks', async (c) => {
   const period = c.req.query('period') || 'today';
   const db = getDb(env.DATABASE_URL);
 
-  const start = period === 'week' ? getStartOfWeekUTC(tz) : getStartOfDayUTC(tz);
+  const start = period === 'week' ? getRollingWeekStartUTC(tz) : getStartOfDayUTC(tz);
   const end   = getEndOfDayUTC(tz);
 
   const result = await db.select({
@@ -91,7 +91,7 @@ stats.get('/top-artists', async (c) => {
   const period = c.req.query('period') || 'today';
   const db = getDb(env.DATABASE_URL);
 
-  const start = period === 'week' ? getStartOfWeekUTC(tz) : getStartOfDayUTC(tz);
+  const start = period === 'week' ? getRollingWeekStartUTC(tz) : getStartOfDayUTC(tz);
   const end   = getEndOfDayUTC(tz);
 
   const result = await db.select({
@@ -126,7 +126,7 @@ stats.get('/week', async (c) => {
   const tz = c.req.query('tz') || 'UTC';
   const db = getDb(env.DATABASE_URL);
 
-  const start = getStartOfWeekUTC(tz);
+  const start = getRollingWeekStartUTC(tz);
   const end   = getEndOfDayUTC(tz);
 
   const rows = await db.select({ durationMs: listeningEvents.durationMs })
