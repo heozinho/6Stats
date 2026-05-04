@@ -65,12 +65,16 @@ sync.post('/recent', async (c) => {
 
     console.log('[sync] step 4: upserting', newArtists.length, 'artists');
     if (newArtists.length > 0) {
-      await db.insert(artists).values(newArtists).onConflictDoNothing();
+      // Deduplicate artists by ID
+      const uniqueArtists = Array.from(new Map(newArtists.map(a => [a.spotifyArtistId, a])).values());
+      await db.insert(artists).values(uniqueArtists).onConflictDoNothing();
     }
     
     console.log('[sync] step 5: upserting', newTracks.length, 'tracks');
     if (newTracks.length > 0) {
-      await db.insert(tracks).values(newTracks).onConflictDoUpdate({
+      // Deduplicate tracks by ID
+      const uniqueTracks = Array.from(new Map(newTracks.map(t => [t.spotifyTrackId, t])).values());
+      await db.insert(tracks).values(uniqueTracks).onConflictDoUpdate({
         target: tracks.spotifyTrackId,
         set: {
           imageUrl: sql`COALESCE(EXCLUDED.image_url, tracks.image_url)`,
@@ -119,8 +123,14 @@ sync.post('/recent', async (c) => {
     console.log('[sync] done');
     return c.json({ message: 'Sync complete', synced: newEvents.length });
   } catch (err: any) {
-    console.error('[sync] FAILED:', err.message, err.stack);
-    return c.json({ error: err.message, cause: err.cause ? err.cause.message : 'no cause', stack: err.stack }, 500);
+    console.error('[sync] FAILED:', err);
+    const errObj: any = {};
+    Object.getOwnPropertyNames(err).forEach(key => errObj[key] = err[key]);
+    if (err.cause) {
+      errObj.cause = {};
+      Object.getOwnPropertyNames(err.cause).forEach(key => errObj.cause[key] = err.cause[key]);
+    }
+    return c.json({ error: errObj }, 500);
   }
 
 });

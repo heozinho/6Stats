@@ -65,13 +65,15 @@ export async function syncAllUsers(env: Bindings) {
       }
 
       if (newArtists.length > 0) {
-        await db.insert(artists).values(newArtists).onConflictDoNothing();
+        const uniqueArtists = Array.from(new Map(newArtists.map(a => [a.spotifyArtistId, a])).values());
+        await db.insert(artists).values(uniqueArtists).onConflictDoNothing();
       }
 
       if (newTracks.length > 0) {
-        await db.insert(tracks).values(newTracks).onConflictDoUpdate({
+        const uniqueTracks = Array.from(new Map(newTracks.map(t => [t.spotifyTrackId, t])).values());
+        await db.insert(tracks).values(uniqueTracks).onConflictDoUpdate({
           target: tracks.spotifyTrackId,
-          set: { imageUrl: sql`COALESCE(EXCLUDED.image_url, image_url)` },
+          set: { imageUrl: sql`COALESCE(EXCLUDED.image_url, tracks.image_url)` },
         });
       }
 

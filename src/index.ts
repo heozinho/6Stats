@@ -81,6 +81,10 @@ app.route('/stats', stats);
 
 app.get('/', (c) => c.text('Music Stats API is running'));
 
+app.route('/sync', sync);
+
+app.get('/', (c) => c.text('Music Stats API is running'));
+
 export default {
   fetch: app.fetch,
   
