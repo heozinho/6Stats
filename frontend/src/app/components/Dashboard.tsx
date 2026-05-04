@@ -20,34 +20,57 @@ function msToReadable(ms: number) {
   return `${Math.floor(mins / 60)}h ${mins % 60}m`;
 }
 
+// Detect user's IANA timezone once
+const USER_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+
 export function Dashboard({ backendUrl, getHeaders, lastSynced, syncing, onSync, onViewStatCard }: DashboardProps) {
   const [activeTab, setActiveTab] = useState<'today' | 'week'>('today');
   const [loading, setLoading] = useState(true);
-  const [todayStats, setTodayStats] = useState<any>(null);
-  const [topTracks, setTopTracks] = useState<any[]>([]);
-  const [topArtists, setTopArtists] = useState<any[]>([]);
+
+  // Today
+  const [todayStats, setTodayStats]   = useState<any>(null);
+  const [todayTracks, setTodayTracks] = useState<any[]>([]);
+  const [todayArtists, setTodayArtists] = useState<any[]>([]);
+
+  // Week
+  const [weekStats, setWeekStats]     = useState<any>(null);
+  const [weekTracks, setWeekTracks]   = useState<any[]>([]);
+  const [weekArtists, setWeekArtists] = useState<any[]>([]);
+
+  const tz = encodeURIComponent(USER_TZ);
 
   const fetchStats = async () => {
     try {
-      const [todayRes, tracksRes, artistsRes] = await Promise.all([
-        fetch(`${backendUrl}/stats/today`, { headers: getHeaders() }),
-        fetch(`${backendUrl}/stats/top-tracks`, { headers: getHeaders() }),
-        fetch(`${backendUrl}/stats/top-artists`, { headers: getHeaders() }),
-      ]);
-      const [todayData, tracksData, artistsData] = await Promise.all([
+      const [todayRes, todayTracksRes, todayArtistsRes, weekRes, weekTracksRes, weekArtistsRes] =
+        await Promise.all([
+          fetch(`${backendUrl}/stats/today?tz=${tz}`,                          { headers: getHeaders() }),
+          fetch(`${backendUrl}/stats/top-tracks?tz=${tz}&period=today`,        { headers: getHeaders() }),
+          fetch(`${backendUrl}/stats/top-artists?tz=${tz}&period=today`,       { headers: getHeaders() }),
+          fetch(`${backendUrl}/stats/week?tz=${tz}`,                           { headers: getHeaders() }),
+          fetch(`${backendUrl}/stats/top-tracks?tz=${tz}&period=week`,         { headers: getHeaders() }),
+          fetch(`${backendUrl}/stats/top-artists?tz=${tz}&period=week`,        { headers: getHeaders() }),
+        ]);
+
+      const [tDay, tTracks, tArtists, tWeek, wTracks, wArtists] = await Promise.all([
         todayRes.json(),
-        tracksRes.json(),
-        artistsRes.json(),
+        todayTracksRes.json(),
+        todayArtistsRes.json(),
+        weekRes.json(),
+        weekTracksRes.json(),
+        weekArtistsRes.json(),
       ]);
-      setTodayStats(todayData);
-      setTopTracks(tracksData.topTracks || []);
-      setTopArtists(artistsData.topArtists || []);
+
+      setTodayStats(tDay);
+      setTodayTracks(tTracks.topTracks  || []);
+      setTodayArtists(tArtists.topArtists || []);
+      setWeekStats(tWeek);
+      setWeekTracks(wTracks.topTracks   || []);
+      setWeekArtists(wArtists.topArtists || []);
     } catch (err) {
       console.error('Failed to fetch stats:', err);
     }
   };
 
-  // Re-fetch stats whenever the app-level sync completes (lastSynced changes)
   useEffect(() => {
     (async () => {
       setLoading(true);
@@ -67,8 +90,13 @@ export function Dashboard({ backendUrl, getHeaders, lastSynced, syncing, onSync,
     );
   }
 
-  const minutesListened = todayStats?.totalMs ? Math.round(todayStats.totalMs / 60000) : 0;
-  const totalPlays = todayStats?.totalPlays || 0;
+  const isWeek = activeTab === 'week';
+  const heroStats   = isWeek ? weekStats   : todayStats;
+  const topTracks   = isWeek ? weekTracks  : todayTracks;
+  const topArtists  = isWeek ? weekArtists : todayArtists;
+
+  const minutesListened = heroStats?.totalMs    ? Math.round(heroStats.totalMs / 60000) : 0;
+  const totalPlays      = heroStats?.totalPlays ?? 0;
 
   return (
     <div className="min-h-screen w-full p-6 pb-24 overflow-y-auto">
@@ -123,7 +151,7 @@ export function Dashboard({ backendUrl, getHeaders, lastSynced, syncing, onSync,
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.2 }}
         whileHover={{ scale: 1.02 }}
-        onClick={() => onViewStatCard({ todayStats, topTracks, topArtists })}
+        onClick={() => onViewStatCard({ todayStats, topTracks: todayTracks, topArtists: todayArtists })}
       >
         <div className="absolute top-4 right-4 opacity-70">
           <Share2 className="w-5 h-5 text-black" />
@@ -142,7 +170,9 @@ export function Dashboard({ backendUrl, getHeaders, lastSynced, syncing, onSync,
         </motion.div>
         <div className="flex items-center gap-2 text-black/70">
           <TrendingUp className="w-4 h-4" />
-          <span className="text-sm">{totalPlays} plays today</span>
+          <span className="text-sm">
+            {totalPlays} play{totalPlays !== 1 ? 's' : ''} {isWeek ? 'this week' : 'today'}
+          </span>
         </div>
       </motion.div>
 
@@ -162,7 +192,7 @@ export function Dashboard({ backendUrl, getHeaders, lastSynced, syncing, onSync,
         {topTracks.length === 0 ? (
           <div className="flex flex-col items-center gap-3 py-10 text-gray-500">
             <Music className="w-10 h-10 opacity-30" />
-            <p className="italic text-sm">Play some tracks on Spotify then sync!</p>
+            <p className="italic text-sm">No tracks {isWeek ? 'this week' : 'today'} yet.</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -177,46 +207,23 @@ export function Dashboard({ backendUrl, getHeaders, lastSynced, syncing, onSync,
                   transition={{ delay: 0.3 + index * 0.06 }}
                   whileHover={{ scale: 1.01 }}
                 >
-                  {/* Rank */}
-                  <div
-                    className="w-8 text-center text-sm font-black shrink-0"
-                    style={{ color: accent }}
-                  >
+                  <div className="w-8 text-center text-sm font-black shrink-0" style={{ color: accent }}>
                     {index + 1}
                   </div>
-
-                  {/* Album Art */}
                   {track.imageUrl ? (
-                    <img
-                      src={track.imageUrl}
-                      alt={track.name}
-                      className="w-14 h-14 rounded-xl object-cover shrink-0 shadow-lg"
-                    />
+                    <img src={track.imageUrl} alt={track.name} className="w-14 h-14 rounded-xl object-cover shrink-0 shadow-lg" />
                   ) : (
-                    <div
-                      className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 shadow-lg"
-                      style={{ background: `linear-gradient(135deg, ${accent}, ${accent}99)` }}
-                    >
+                    <div className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 shadow-lg" style={{ background: `linear-gradient(135deg, ${accent}, ${accent}99)` }}>
                       <Music className="w-6 h-6 text-white/80" />
                     </div>
                   )}
-
-                  {/* Info */}
                   <div className="flex-1 min-w-0">
                     <div className="font-bold text-white truncate">{track.name}</div>
-                    <div className="text-xs text-gray-400 mt-0.5">
-                      {msToReadable(track.msPlayed ?? 0)} listened
-                    </div>
+                    <div className="text-xs text-gray-400 mt-0.5">{msToReadable(track.msPlayed ?? 0)} listened</div>
                   </div>
-
-                  {/* Plays badge */}
-                  <div
-                    className="text-xs font-bold px-3 py-1 rounded-full shrink-0"
-                    style={{ background: `${accent}22`, color: accent }}
-                  >
+                  <div className="text-xs font-bold px-3 py-1 rounded-full shrink-0" style={{ background: `${accent}22`, color: accent }}>
                     {track.playCount} plays
                   </div>
-
                   <ChevronRight className="w-4 h-4 text-gray-600 group-hover:text-gray-300 transition-colors shrink-0" />
                 </motion.div>
               );
@@ -240,7 +247,7 @@ export function Dashboard({ backendUrl, getHeaders, lastSynced, syncing, onSync,
         {topArtists.length === 0 ? (
           <div className="flex flex-col items-center gap-3 py-10 text-gray-500">
             <Mic2 className="w-10 h-10 opacity-30" />
-            <p className="italic text-sm">No artist data yet.</p>
+            <p className="italic text-sm">No artists {isWeek ? 'this week' : 'today'} yet.</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-4">
@@ -255,44 +262,26 @@ export function Dashboard({ backendUrl, getHeaders, lastSynced, syncing, onSync,
                   transition={{ delay: 0.8 + index * 0.08 }}
                   whileHover={{ scale: 1.03 }}
                 >
-                  {/* Artist Photo */}
                   {artist.imageUrl ? (
                     <div className="relative w-full aspect-square">
-                      <img
-                        src={artist.imageUrl}
-                        alt={artist.name}
-                        className="w-full h-full object-cover"
-                      />
-                      {/* Gradient overlay */}
+                      <img src={artist.imageUrl} alt={artist.name} className="w-full h-full object-cover" />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                      {/* Rank badge */}
-                      <div
-                        className="absolute top-2 left-2 w-7 h-7 rounded-full flex items-center justify-center text-xs font-black"
-                        style={{ background: accent }}
-                      >
+                      <div className="absolute top-2 left-2 w-7 h-7 rounded-full flex items-center justify-center text-xs font-black" style={{ background: accent }}>
                         {index + 1}
                       </div>
                     </div>
                   ) : (
-                    <div
-                      className="w-full aspect-square flex items-center justify-center text-3xl font-black"
-                      style={{ background: `linear-gradient(135deg, ${accent}, ${accent}77)` }}
-                    >
+                    <div className="w-full aspect-square flex items-center justify-center text-3xl font-black" style={{ background: `linear-gradient(135deg, ${accent}, ${accent}77)` }}>
                       {index + 1}
                     </div>
                   )}
-
-                  {/* Info */}
                   <div className="p-3">
                     <div className="font-bold text-white text-sm truncate">{artist.name}</div>
                     <div className="text-xs text-gray-400 mt-0.5">
                       {artist.playCount} plays · {msToReadable(artist.msPlayed ?? 0)}
                     </div>
                     {artist.genres?.[0] && (
-                      <div
-                        className="text-xs mt-1 font-semibold capitalize"
-                        style={{ color: accent }}
-                      >
+                      <div className="text-xs mt-1 font-semibold capitalize" style={{ color: accent }}>
                         {artist.genres[0]}
                       </div>
                     )}
