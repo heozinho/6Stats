@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import { Clock, TrendingUp, Share2, ChevronRight, RefreshCw, Music, Mic2, BarChart2 } from 'lucide-react';
+import { Clock, TrendingUp, Share2, ChevronRight, Music, Mic2, BarChart2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { AudioDNA } from './AudioDNA';
 
@@ -7,8 +7,6 @@ interface DashboardProps {
   backendUrl: string;
   fetchWithAuth: (input: string, init?: RequestInit) => Promise<Response>;
   lastSynced: number;
-  syncing: boolean;
-  onSync: () => void;
   onViewStatCard: (stats: { todayStats: any; topTracks: any[]; topArtists: any[] }) => void;
   onBpmChange: (bpm: number) => void;
   onHistoryChange: (history: any[]) => void;
@@ -27,15 +25,7 @@ function msToReadable(ms: number) {
 // Detect user's IANA timezone once
 const USER_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 
-function timeSince(ts: number): string {
-  if (!ts) return '';
-  const mins = Math.floor((Date.now() - ts) / 60000);
-  if (mins < 1) return 'just now';
-  if (mins === 1) return '1 min ago';
-  return `${mins} mins ago`;
-}
-
-export function Dashboard({ backendUrl, fetchWithAuth, lastSynced, syncing, onSync, onViewStatCard, onBpmChange, onHistoryChange, history }: DashboardProps) {
+export function Dashboard({ backendUrl, fetchWithAuth, lastSynced, onViewStatCard, onBpmChange, onHistoryChange, history }: DashboardProps) {
   const [activeTab, setActiveTab] = useState<'today' | 'week'>('today');
   const [loading, setLoading] = useState(true);
 
@@ -116,19 +106,6 @@ export function Dashboard({ backendUrl, fetchWithAuth, lastSynced, syncing, onSy
         <div>
           <h2 className="text-4xl font-extrabold mb-1">Your Stats</h2>
           <p className="text-sm" style={{ color: 'rgba(255,255,255,0.3)' }}>Listening history · Spotify</p>
-        </div>
-        <div className="flex flex-col items-end gap-1">
-          <button
-            onClick={onSync}
-            disabled={syncing}
-            title="Sync latest plays"
-            className="p-3 rounded-full bg-white/5 hover:bg-white/10 transition-colors disabled:opacity-40"
-          >
-            <RefreshCw className={`w-5 h-5 text-gray-300 ${syncing ? 'animate-spin' : ''}`} />
-          </button>
-          {lastSynced > 0 && (
-            <span className="text-xs text-gray-600">{timeSince(lastSynced)}</span>
-          )}
         </div>
       </motion.div>
 

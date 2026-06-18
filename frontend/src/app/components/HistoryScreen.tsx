@@ -1,13 +1,11 @@
 import { motion } from 'motion/react';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Music, History, RefreshCw } from 'lucide-react';
+import { Music, History } from 'lucide-react';
 
 interface HistoryScreenProps {
   backendUrl: string;
   fetchWithAuth: (input: string, init?: RequestInit) => Promise<Response>;
   lastSynced: number;
-  syncing: boolean;
-  onSync: () => void;
 }
 
 interface HistoryEntry {
@@ -58,7 +56,7 @@ function groupByDate(entries: HistoryEntry[]) {
   return groups;
 }
 
-export function HistoryScreen({ backendUrl, fetchWithAuth, lastSynced, syncing, onSync }: HistoryScreenProps) {
+export function HistoryScreen({ backendUrl, fetchWithAuth, lastSynced }: HistoryScreenProps) {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
@@ -121,14 +119,6 @@ export function HistoryScreen({ backendUrl, fetchWithAuth, lastSynced, syncing, 
             <h2 className="text-3xl font-extrabold">Listening History</h2>
             <p className="text-gray-400 text-sm mt-0.5">{history.length} plays tracked</p>
           </div>
-          <button
-            onClick={onSync}
-            disabled={syncing}
-            title="Sync latest plays"
-            className="p-3 rounded-full bg-white/5 hover:bg-white/10 transition-colors disabled:opacity-40"
-          >
-            <RefreshCw className={`w-4 h-4 text-gray-400 ${syncing ? 'animate-spin' : ''}`} />
-          </button>
         </div>
       </motion.div>
 

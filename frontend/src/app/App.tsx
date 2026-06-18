@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { LayoutDashboard, History, LogOut } from 'lucide-react';
+import { LayoutDashboard, History, LogOut, RefreshCw } from 'lucide-react';
 import { WelcomeScreen } from './components/WelcomeScreen';
 import { Dashboard } from './components/Dashboard';
 import { StatCard } from './components/StatCard';
@@ -167,18 +167,26 @@ export default function App() {
         <>
           <GlowBackground bpm={bpm} />
           
-          {/* Top-right controls */}
-          <div className="absolute top-6 right-4 z-50 flex items-center gap-2">
+          {/* Top-right controls: Sync · Theme · Logout */}
+          <div className="absolute top-5 right-4 z-50 flex items-center gap-1.5">
+            <button
+              onClick={triggerSync}
+              disabled={syncing}
+              title="Sync latest plays"
+              className="p-2.5 rounded-full bg-white/5 hover:bg-white/10 glass transition-all disabled:opacity-40"
+            >
+              <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin text-orange-400' : ''}`} />
+            </button>
             <button
               onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
-              className="p-3 rounded-full bg-white/5 hover:bg-white/10 glass transition-all"
+              className="p-2.5 rounded-full bg-white/5 hover:bg-white/10 glass transition-all"
               title="Toggle theme"
             >
               {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
             <button
               onClick={() => logout('manual')}
-              className="p-3 rounded-full bg-white/5 hover:bg-red-500/20 hover:text-red-400 glass transition-all"
+              className="p-2.5 rounded-full bg-white/5 hover:bg-red-500/20 hover:text-red-400 glass transition-all"
               title="Log out"
             >
               <LogOut className="w-4 h-4" />
@@ -192,8 +200,6 @@ export default function App() {
                 backendUrl={backendUrl}
                 fetchWithAuth={fetchWithAuth}
                 lastSynced={lastSynced}
-                syncing={syncing}
-                onSync={triggerSync}
                 onBpmChange={(b) => setBpm(b)}
                 onHistoryChange={(h) => setRecentHistory(h)}
                 history={recentHistory}
@@ -208,8 +214,6 @@ export default function App() {
                 backendUrl={backendUrl}
                 fetchWithAuth={fetchWithAuth}
                 lastSynced={lastSynced}
-                syncing={syncing}
-                onSync={triggerSync}
               />
             )}
           </div>
