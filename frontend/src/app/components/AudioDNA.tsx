@@ -47,9 +47,9 @@ export function AudioDNA({ history }: AudioDNAProps) {
       {/* Hover Tooltip */}
       {hovered && (
         <div className="absolute top-10 left-0 right-0 z-20 flex justify-center pointer-events-none">
-          <div className="bg-black/90 glass px-3 py-1.5 rounded-full text-[10px] border border-white/10 animate-fadeIn">
-            <span className="font-bold text-white">{hovered.trackName}</span>
-            <span className="mx-1 text-gray-500">•</span>
+          <div className="bg-black/90 dark:bg-white/90 glass px-3 py-1.5 rounded-full text-[10px] border border-white/10 dark:border-black/10 animate-fadeIn">
+            <span className="font-bold text-white dark:text-black">{hovered.trackName}</span>
+            <span className="mx-1 text-gray-500 dark:text-gray-400">•</span>
             <span className="text-gray-400">{hovered.artistName}</span>
           </div>
         </div>

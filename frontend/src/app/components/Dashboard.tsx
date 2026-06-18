@@ -226,12 +226,12 @@ export function Dashboard({ backendUrl, fetchWithAuth, lastSynced, onViewStatCar
                     <img src={track.imageUrl} alt={track.name} className="w-14 h-14 rounded-xl object-cover shrink-0 shadow-lg" />
                   ) : (
                     <div className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 shadow-lg" style={{ background: `linear-gradient(135deg, ${accent}, ${accent}99)` }}>
-                      <Music className="w-6 h-6 text-white/80" />
+                      <Music className="w-6 h-6 text-foreground/80" />
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <div className="font-bold text-white truncate">{track.name}</div>
-                    <div className="text-xs text-gray-400 mt-0.5">{msToReadable(track.msPlayed ?? 0)} listened</div>
+                    <div className="font-bold text-foreground truncate">{track.name}</div>
+                    <div className="text-xs text-foreground/60 mt-0.5">{msToReadable(track.msPlayed ?? 0)} listened</div>
                   </div>
                   <div className="text-xs font-bold px-3 py-1 rounded-full shrink-0" style={{ background: `${accent}22`, color: accent }}>
                     {track.playCount} plays
@@ -286,7 +286,7 @@ export function Dashboard({ backendUrl, fetchWithAuth, lastSynced, onViewStatCar
                         className="w-full h-full rounded-[1.25rem] shadow-[0_8px_24px_-8px_rgba(0,0,0,0.5)] flex items-center justify-center transition-transform duration-300 group-hover:-translate-y-1" 
                         style={{ background: `linear-gradient(135deg, ${accent}, ${accent}77)` }}
                       >
-                        <Mic2 className="w-10 h-10 text-white/50" />
+                        <Mic2 className="w-10 h-10 text-foreground/50" />
                       </div>
                     )}
                     
@@ -300,8 +300,8 @@ export function Dashboard({ backendUrl, fetchWithAuth, lastSynced, onViewStatCar
                   </div>
                   
                   <div className="w-full px-1">
-                    <div className="font-bold text-white text-[15px] leading-tight truncate tracking-tight">{artist.name}</div>
-                    <div className="text-[13px] text-gray-400 mt-0.5 truncate">
+                    <div className="font-bold text-foreground text-[15px] leading-tight truncate tracking-tight">{artist.name}</div>
+                    <div className="text-[13px] text-foreground/60 mt-0.5 truncate">
                       {artist.playCount} plays · {msToReadable(artist.msPlayed ?? 0)}
                     </div>
                     {artist.genres?.[0] && (

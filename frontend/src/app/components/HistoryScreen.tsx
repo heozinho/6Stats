@@ -168,14 +168,14 @@ export function HistoryScreen({ backendUrl, fetchWithAuth, lastSynced }: History
                       />
                     ) : (
                       <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
-                        <Music className="w-5 h-5 text-white/30" />
+                        <Music className="w-5 h-5 text-foreground/80" />
                       </div>
                     )}
 
                     {/* Info */}
                     <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-white text-sm truncate">{entry.trackName}</div>
-                      <div className="text-xs text-gray-400 truncate">{entry.artistName ?? 'Unknown artist'}</div>
+                      <div className="font-semibold text-foreground text-sm truncate">{entry.trackName}</div>
+                      <div className="text-xs text-foreground/60 truncate">{entry.artistName ?? 'Unknown artist'}</div>
                     </div>
 
                     {/* Time + duration */}

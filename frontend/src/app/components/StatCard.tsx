@@ -41,15 +41,14 @@ export function StatCard({ onClose, todayStats, topTracks, topArtists }: StatCar
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/80 backdrop-blur-md">
       <motion.div
-        className="relative w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl"
+        className="fixed left-1/2 -translate-x-1/2 bottom-20 md:bottom-auto md:top-1/2 md:-translate-y-1/2 w-[90%] max-w-md z-50 rounded-3xl overflow-hidden glass border border-foreground/10 shadow-2xl"
         style={{
-          background: 'linear-gradient(160deg, #111111 0%, #1a1a1a 40%, #0e0e0e 100%)',
-          border: '1px solid rgba(255,255,255,0.08)',
+          background: 'var(--background)',
         }}
-        initial={{ scale: 0.88, opacity: 0, y: 32 }}
-        animate={{ scale: 1, opacity: 1, y: 0 }}
-        exit={{ scale: 0.88, opacity: 0 }}
-        transition={{ type: 'spring', duration: 0.45, bounce: 0.25 }}
+        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.9, y: 20 }}
+        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
       >
         {/* Subtle top accent line */}
         <div
@@ -60,10 +59,9 @@ export function StatCard({ onClose, todayStats, topTracks, topArtists }: StatCar
         {/* Close */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full flex items-center justify-center transition-colors"
-          style={{ background: 'rgba(255,255,255,0.07)' }}
+          className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-foreground/10 hover:bg-foreground/20"
         >
-          <X className="w-4 h-4 text-white/60" />
+          <X className="w-4 h-4 text-foreground/60" />
         </button>
 
         <div className="relative p-7 pb-6 flex flex-col gap-5">
@@ -75,19 +73,19 @@ export function StatCard({ onClose, todayStats, topTracks, topArtists }: StatCar
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
           >
-            <div className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.35)' }}>Today's Recap</div>
+            <div className="text-xs font-semibold uppercase tracking-widest text-foreground/40">Today's Recap</div>
             <div className="flex items-end gap-3 mt-1">
-              <div className="text-6xl font-black tabular-nums text-white leading-none">{minutesListened.toLocaleString()}</div>
+              <div className="text-6xl font-black tabular-nums text-foreground leading-none">{minutesListened.toLocaleString()}</div>
               <div className="pb-1 flex flex-col gap-0.5">
-                <span className="text-sm font-semibold" style={{ color: 'rgba(255,255,255,0.5)' }}>mins</span>
+                <span className="text-sm font-semibold text-foreground/50">mins</span>
               </div>
             </div>
             <div className="flex items-center gap-4 mt-2">
-              <div className="flex items-center gap-1.5" style={{ color: 'rgba(255,255,255,0.4)' }}>
+              <div className="flex items-center gap-1.5 text-foreground/40">
                 <Clock className="w-3.5 h-3.5" />
                 <span className="text-xs">{msToReadable(todayStats?.totalMs ?? 0)}</span>
               </div>
-              <div className="flex items-center gap-1.5" style={{ color: 'rgba(255,255,255,0.4)' }}>
+              <div className="flex items-center gap-1.5 text-foreground/40">
                 <Play className="w-3.5 h-3.5" />
                 <span className="text-xs">{totalPlays} plays</span>
               </div>
@@ -95,7 +93,7 @@ export function StatCard({ onClose, todayStats, topTracks, topArtists }: StatCar
           </motion.div>
 
           {/* Divider */}
-          <div className="h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
+          <div className="h-px bg-foreground/10" />
 
           {/* Top Track */}
           {topTrack && (
@@ -112,11 +110,8 @@ export function StatCard({ onClose, todayStats, topTracks, topArtists }: StatCar
                   className="w-14 h-14 rounded-xl object-cover shadow-lg shrink-0"
                 />
               ) : (
-                <div
-                  className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0"
-                  style={{ background: 'rgba(255,255,255,0.06)' }}
-                >
-                  <Music className="w-6 h-6" style={{ color: 'rgba(255,255,255,0.3)' }} />
+                <div className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 bg-foreground/10">
+                  <Music className="w-6 h-6 text-foreground/30" />
                 </div>
               )}
               <div className="min-w-0 flex-1">
@@ -124,8 +119,8 @@ export function StatCard({ onClose, todayStats, topTracks, topArtists }: StatCar
                   <BarChart2 className="w-3 h-3 shrink-0" style={{ color: '#ff6b35' }} />
                   <span className="text-xs font-bold uppercase tracking-wider" style={{ color: '#ff6b35' }}>Top Track</span>
                 </div>
-                <div className="text-white font-bold text-sm truncate">{topTrack.name}</div>
-                <div className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                <div className="text-foreground font-bold text-sm truncate">{topTrack.name}</div>
+                <div className="text-xs mt-0.5 text-foreground/40">
                   {topTrack.playCount} plays · {msToReadable(topTrack.msPlayed ?? 0)}
                 </div>
               </div>
@@ -147,11 +142,8 @@ export function StatCard({ onClose, todayStats, topTracks, topArtists }: StatCar
                   className="w-14 h-14 rounded-full object-cover shadow-lg shrink-0"
                 />
               ) : (
-                <div
-                  className="w-14 h-14 rounded-full flex items-center justify-center shrink-0"
-                  style={{ background: 'rgba(255,255,255,0.06)' }}
-                >
-                  <Mic2 className="w-6 h-6" style={{ color: 'rgba(255,255,255,0.3)' }} />
+                <div className="w-14 h-14 rounded-full flex items-center justify-center shrink-0 bg-foreground/10">
+                  <Mic2 className="w-6 h-6 text-foreground/30" />
                 </div>
               )}
               <div className="min-w-0 flex-1">
@@ -159,8 +151,8 @@ export function StatCard({ onClose, todayStats, topTracks, topArtists }: StatCar
                   <Mic2 className="w-3 h-3 shrink-0" style={{ color: '#4ecdc4' }} />
                   <span className="text-xs font-bold uppercase tracking-wider" style={{ color: '#4ecdc4' }}>Top Artist</span>
                 </div>
-                <div className="text-white font-bold text-sm truncate">{topArtist.name}</div>
-                <div className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                <div className="text-foreground font-bold text-sm truncate">{topArtist.name}</div>
+                <div className="text-xs mt-0.5 text-foreground/40">
                   {topArtist.playCount} plays · {msToReadable(topArtist.msPlayed ?? 0)}
                 </div>
               </div>
@@ -170,17 +162,20 @@ export function StatCard({ onClose, todayStats, topTracks, topArtists }: StatCar
           {/* No data state */}
           {!topTrack && !topArtist && (
             <motion.div
-              className="py-6 text-center"
+              className="flex flex-col items-center justify-center py-6 text-center"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.2 }}
             >
-              <p className="text-sm" style={{ color: 'rgba(255,255,255,0.35)' }}>Sync some plays first to see your stats.</p>
+              <div className="w-12 h-12 rounded-full flex items-center justify-center mb-3 bg-foreground/5">
+                <Music className="w-6 h-6 text-foreground/20" />
+              </div>
+              <p className="text-sm text-foreground/40">Sync some plays first to see your stats.</p>
             </motion.div>
           )}
 
-          {/* Divider */}
-          <div className="h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
+          {/* Bottom Divider & Action */}
+          <div className="h-px bg-foreground/10" />
 
           {/* Share Button */}
           <motion.button
