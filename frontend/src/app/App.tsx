@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { LayoutDashboard, History } from 'lucide-react';
+import { LayoutDashboard, History, LogOut } from 'lucide-react';
 import { WelcomeScreen } from './components/WelcomeScreen';
 import { Dashboard } from './components/Dashboard';
 import { StatCard } from './components/StatCard';
@@ -33,20 +33,47 @@ export default function App() {
   }, [theme]);
 
   const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8788';
-  const getHeaders = () => ({ Authorization: `Bearer ${localStorage.getItem('6stats_token')}` });
+
+  const logout = useCallback((reason?: 'expired' | 'manual') => {
+    localStorage.removeItem('6stats_token');
+    setScreen('welcome');
+    setLiveStats(null);
+    setRecentHistory([]);
+    setShowStatCard(false);
+    if (reason === 'expired') {
+      setError('Session expired — please log in again.');
+    }
+  }, []);
+
+  // Authenticated fetch — auto-logs out on 401
+  const fetchWithAuth = useCallback(async (input: string, init?: RequestInit): Promise<Response> => {
+    const token = localStorage.getItem('6stats_token');
+    const res = await fetch(input, {
+      ...init,
+      headers: {
+        ...(init?.headers ?? {}),
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    if (res.status === 401) {
+      logout('expired');
+      throw new Error('Session expired');
+    }
+    return res;
+  }, [logout]);
 
   // App-level sync — called once on login and whenever the user taps "Sync Now"
   const triggerSync = useCallback(async () => {
     setSyncing(true);
     try {
-      await fetch(`${backendUrl}/sync/recent`, { method: 'POST', headers: getHeaders() });
+      await fetchWithAuth(`${backendUrl}/sync/recent`, { method: 'POST' });
       setLastSynced(Date.now());
     } catch (err) {
       console.error('Sync failed:', err);
     } finally {
       setSyncing(false);
     }
-  }, [backendUrl]);
+  }, [backendUrl, fetchWithAuth]);
 
   useEffect(() => {
     const token = localStorage.getItem('6stats_token');
@@ -100,13 +127,12 @@ export default function App() {
     }
   }, [screen]);
 
-  // Auto-poll every 5 minutes while the app is open so completed plays appear
-  // without needing a manual tap (Spotify only logs plays after the track finishes)
+  // Auto-poll every 5 minutes
   useEffect(() => {
     if (screen !== 'app') return;
     const interval = setInterval(() => {
       if (!syncing) triggerSync();
-    }, 5 * 60 * 1000); // 5 minutes
+    }, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, [screen, syncing, triggerSync]);
 
@@ -115,7 +141,7 @@ export default function App() {
     <div className="size-full bg-background text-foreground overflow-hidden flex flex-col">
       {/* Error toast */}
       {error && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-red-500 text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-3">
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-red-500 text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-3 whitespace-nowrap">
           {error}
           <button className="font-bold" onClick={() => setError(null)}>✕</button>
         </div>
@@ -141,20 +167,30 @@ export default function App() {
         <>
           <GlowBackground bpm={bpm} />
           
-          {/* Theme Toggle */}
-          <button
-            onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
-            className="absolute top-6 right-20 z-50 p-3 rounded-full bg-white/5 hover:bg-white/10 glass transition-all"
-          >
-            {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-          </button>
+          {/* Top-right controls */}
+          <div className="absolute top-6 right-4 z-50 flex items-center gap-2">
+            <button
+              onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
+              className="p-3 rounded-full bg-white/5 hover:bg-white/10 glass transition-all"
+              title="Toggle theme"
+            >
+              {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
+            <button
+              onClick={() => logout('manual')}
+              className="p-3 rounded-full bg-white/5 hover:bg-red-500/20 hover:text-red-400 glass transition-all"
+              title="Log out"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          </div>
 
           {/* Tab content */}
           <div className="flex-1 overflow-hidden">
             {activeTab === 'dashboard' && (
               <Dashboard
                 backendUrl={backendUrl}
-                getHeaders={getHeaders}
+                fetchWithAuth={fetchWithAuth}
                 lastSynced={lastSynced}
                 syncing={syncing}
                 onSync={triggerSync}
@@ -170,7 +206,7 @@ export default function App() {
             {activeTab === 'history' && (
               <HistoryScreen
                 backendUrl={backendUrl}
-                getHeaders={getHeaders}
+                fetchWithAuth={fetchWithAuth}
                 lastSynced={lastSynced}
                 syncing={syncing}
                 onSync={triggerSync}

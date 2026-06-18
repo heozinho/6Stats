@@ -4,7 +4,7 @@ import { Music, History, RefreshCw } from 'lucide-react';
 
 interface HistoryScreenProps {
   backendUrl: string;
-  getHeaders: () => Record<string, string>;
+  fetchWithAuth: (input: string, init?: RequestInit) => Promise<Response>;
   lastSynced: number;
   syncing: boolean;
   onSync: () => void;
@@ -58,7 +58,7 @@ function groupByDate(entries: HistoryEntry[]) {
   return groups;
 }
 
-export function HistoryScreen({ backendUrl, getHeaders, lastSynced, syncing, onSync }: HistoryScreenProps) {
+export function HistoryScreen({ backendUrl, fetchWithAuth, lastSynced, syncing, onSync }: HistoryScreenProps) {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
@@ -69,7 +69,7 @@ export function HistoryScreen({ backendUrl, getHeaders, lastSynced, syncing, onS
   const fetchPage = useCallback(async (pageNum: number, replace = false) => {
     if (pageNum === 0) setLoading(true); else setLoadingMore(true);
     try {
-      const res = await fetch(`${backendUrl}/stats/history?page=${pageNum}&limit=50`, { headers: getHeaders() });
+      const res = await fetchWithAuth(`${backendUrl}/stats/history?page=${pageNum}&limit=50`);
       const data = await res.json() as any;
       setHistory(prev => replace ? data.history : [...prev, ...data.history]);
       setHasMore(data.hasMore);

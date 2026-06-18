@@ -5,7 +5,7 @@ import { AudioDNA } from './AudioDNA';
 
 interface DashboardProps {
   backendUrl: string;
-  getHeaders: () => Record<string, string>;
+  fetchWithAuth: (input: string, init?: RequestInit) => Promise<Response>;
   lastSynced: number;
   syncing: boolean;
   onSync: () => void;
@@ -35,7 +35,7 @@ function timeSince(ts: number): string {
   return `${mins} mins ago`;
 }
 
-export function Dashboard({ backendUrl, getHeaders, lastSynced, syncing, onSync, onViewStatCard, onBpmChange, onHistoryChange, history }: DashboardProps) {
+export function Dashboard({ backendUrl, fetchWithAuth, lastSynced, syncing, onSync, onViewStatCard, onBpmChange, onHistoryChange, history }: DashboardProps) {
   const [activeTab, setActiveTab] = useState<'today' | 'week'>('today');
   const [loading, setLoading] = useState(true);
 
@@ -53,7 +53,7 @@ export function Dashboard({ backendUrl, getHeaders, lastSynced, syncing, onSync,
 
   const fetchStats = async () => {
     try {
-      const res = await fetch(`${backendUrl}/stats/dashboard?tz=${tz}`, { headers: getHeaders() });
+      const res = await fetchWithAuth(`${backendUrl}/stats/dashboard?tz=${tz}`);
       if (!res.ok) throw new Error('Dashboard fetch failed');
       
       const data = await res.json();
