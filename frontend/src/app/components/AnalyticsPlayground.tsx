@@ -62,8 +62,8 @@ export function AnalyticsPlayground({ history }: AnalyticsPlaygroundProps) {
         className="max-w-4xl mx-auto"
       >
         <div className="flex items-center gap-3 mb-8">
-          <Wrench className="w-8 h-8 text-yellow-400" />
-          <h2 className="text-3xl font-black tracking-tight">Analytics Playground</h2>
+          <Wrench className="w-8 h-8 text-yellow-500 dark:text-yellow-400" />
+          <h2 className="text-3xl font-black tracking-tight text-foreground">Analytics Playground</h2>
         </div>
 
         {/* The Audio DNA Bar */}
@@ -73,19 +73,19 @@ export function AnalyticsPlayground({ history }: AnalyticsPlaygroundProps) {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Vibe Radar */}
-          <div className="glass bg-white/5 rounded-3xl p-6 relative overflow-hidden group">
+          <div className="glass bg-black/5 dark:bg-white/5 rounded-3xl p-6 relative overflow-hidden group">
             <div className="absolute top-0 right-0 p-4 opacity-20 group-hover:opacity-100 transition-opacity">
-              <Target className="w-6 h-6 text-orange-400" />
+              <Target className="w-6 h-6 text-orange-500 dark:text-orange-400" />
             </div>
-            <h3 className="text-xl font-bold mb-2 text-white">The Vibe Radar</h3>
-            <p className="text-sm text-gray-400 mb-6">Average acoustic features of your recent tracks.</p>
+            <h3 className="text-xl font-bold mb-2 text-foreground">The Vibe Radar</h3>
+            <p className="text-sm text-foreground/60 mb-6">Average acoustic features of your recent tracks.</p>
             
             <div className="h-64 w-full">
               {radarData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
-                    <PolarGrid stroke="rgba(255,255,255,0.1)" />
-                    <PolarAngleAxis dataKey="subject" tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 12 }} />
+                    <PolarGrid stroke="currentColor" strokeOpacity={0.1} />
+                    <PolarAngleAxis dataKey="subject" tick={{ fill: 'currentColor', opacity: 0.7, fontSize: 12 }} />
                     <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
                     <Radar
                       name="Vibe"
@@ -103,19 +103,19 @@ export function AnalyticsPlayground({ history }: AnalyticsPlaygroundProps) {
           </div>
 
           {/* BPM Heartbeat */}
-          <div className="glass bg-white/5 rounded-3xl p-6 relative overflow-hidden group">
+          <div className="glass bg-black/5 dark:bg-white/5 rounded-3xl p-6 relative overflow-hidden group">
             <div className="absolute top-0 right-0 p-4 opacity-20 group-hover:opacity-100 transition-opacity">
-              <Activity className="w-6 h-6 text-teal-400" />
+              <Activity className="w-6 h-6 text-teal-500 dark:text-teal-400" />
             </div>
-            <h3 className="text-xl font-bold mb-2 text-white">BPM Heartbeat</h3>
-            <p className="text-sm text-gray-400 mb-6">How your tempo changes from song to song.</p>
+            <h3 className="text-xl font-bold mb-2 text-foreground">BPM Heartbeat</h3>
+            <p className="text-sm text-foreground/60 mb-6">How your tempo changes from song to song.</p>
             
             <div className="h-64 w-full">
               {bpmData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={bpmData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                     <XAxis dataKey="index" hide />
-                    <YAxis domain={['dataMin - 10', 'dataMax + 10']} stroke="rgba(255,255,255,0.1)" tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 10 }} />
+                    <YAxis domain={['dataMin - 10', 'dataMax + 10']} stroke="currentColor" strokeOpacity={0.1} tick={{ fill: 'currentColor', opacity: 0.7, fontSize: 10 }} />
                     <Tooltip 
                       contentStyle={{ backgroundColor: 'rgba(0,0,0,0.8)', border: 'none', borderRadius: '12px', color: '#fff' }}
                       labelStyle={{ display: 'none' }}

@@ -182,12 +182,12 @@ export function Dashboard({ backendUrl, fetchWithAuth, lastSynced, onViewStatCar
               <Wrench className="w-6 h-6 text-yellow-400" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-white mb-0.5">Analytics Playground</h3>
-              <p className="text-sm text-gray-400">Audio DNA, Vibe Radar & BPM Heartbeat</p>
+              <h3 className="text-lg font-bold text-foreground mb-0.5">Analytics Playground</h3>
+              <p className="text-sm text-foreground/60">Audio DNA, Vibe Radar & BPM Heartbeat</p>
             </div>
           </div>
-          <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-white/10 transition-colors">
-            <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-white" />
+          <div className="w-10 h-10 rounded-full bg-black/5 dark:bg-white/5 flex items-center justify-center group-hover:bg-black/10 dark:group-hover:bg-white/10 transition-colors">
+            <ChevronRight className="w-5 h-5 text-foreground/60 group-hover:text-foreground" />
           </div>
         </div>
       </motion.div>
