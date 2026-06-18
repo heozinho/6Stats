@@ -39,6 +39,7 @@ export async function syncAllUsers(env: Bindings) {
             spotifyArtistId: track.artists[0].id,
             name: track.artists[0].name,
             genres: track.artists[0].genres || [],
+            imageUrl: track.album?.images?.[0]?.url ?? null,
           });
         }
 
@@ -66,7 +67,12 @@ export async function syncAllUsers(env: Bindings) {
 
       if (newArtists.length > 0) {
         const uniqueArtists = Array.from(new Map(newArtists.map(a => [a.spotifyArtistId, a])).values());
-        await db.insert(artists).values(uniqueArtists).onConflictDoNothing();
+        await db.insert(artists).values(uniqueArtists).onConflictDoUpdate({
+          target: artists.spotifyArtistId,
+          set: {
+            imageUrl: sql`COALESCE(artists.image_url, EXCLUDED.image_url)`,
+          },
+        });
       }
 
       if (newTracks.length > 0) {
