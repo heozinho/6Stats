@@ -44,6 +44,10 @@ export const listeningEvents = pgTable('listening_events', {
   durationMs: integer('duration_ms'),
   source: text('source'),
   processed: boolean('processed').default(false),
+}, (table) => {
+  return {
+    pk: uniqueIndex('listening_events_unique_idx').on(table.userId, table.spotifyTrackId, table.playedAt),
+  };
 });
 
 export const dailyUserStats = pgTable('daily_user_stats', {
