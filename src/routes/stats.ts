@@ -3,7 +3,7 @@ import { Bindings, Variables } from '../types';
 import { getDb } from '../db';
 import { listeningEvents, tracks, artists } from '../db/schema';
 import { eq, desc, and, gte, lt, sql } from 'drizzle-orm';
-import { getStartOfDayUTC, getRollingWeekStartUTC, getEndOfDayUTC } from '../utils/date';
+import { getStartOfDayUTC, getRollingWeekStartUTC, getEndOfDayUTC } from '../services/timezone';
 
 export const stats = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 
