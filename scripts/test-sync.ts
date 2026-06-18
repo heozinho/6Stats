@@ -1,19 +1,16 @@
-import { Hono } from 'hono';
-import { Bindings, Variables } from '../types';
-import { getDb } from '../db';
-import { getValidSpotifyToken, getRecentlyPlayed, getAudioFeatures } from '../services/spotify';
-import { tracks, artists, listeningEvents } from '../db/schema';
+import { getDb } from '../src/db';
+import { getValidSpotifyToken, getRecentlyPlayed, getAudioFeatures } from '../src/services/spotify';
+import { tracks, artists, listeningEvents } from '../src/db/schema';
 import { eq, sql } from 'drizzle-orm';
-import { runAggregation } from '../crons/aggregate';
-import { getRedis, deleteCache } from '../services/cache';
+import { runAggregation } from '../src/crons/aggregate';
+import dotenv from 'dotenv';
+dotenv.config({ path: '.dev.vars' });
 
-export const sync = new Hono<{ Bindings: Bindings; Variables: Variables }>();
+const env = process.env as any;
+const userId = 'dfcae32d-bab4-4e0f-8714-f1a3dbeae5a5';
 
-sync.post('/recent', async (c) => {
-  const userId = c.get('userId');
-  const env = c.env;
+async function testSync() {
   const db = getDb(env.DATABASE_URL);
-
   try {
     console.log('[sync] step 1: getting valid token for', userId);
     const token = await getValidSpotifyToken(userId, db, env);
@@ -22,7 +19,8 @@ sync.post('/recent', async (c) => {
     const recent = await getRecentlyPlayed(token, 50);
 
     if (recent.items.length === 0) {
-      return c.json({ message: 'No new tracks' });
+      console.log('No new tracks');
+      return;
     }
 
     console.log('[sync] step 3: got', recent.items.length, 'items, building inserts');
@@ -38,7 +36,6 @@ sync.post('/recent', async (c) => {
           spotifyArtistId: track.artists[0].id,
           name: track.artists[0].name,
           genres: track.artists[0].genres || [],
-          imageUrl: track.album?.images?.[0]?.url ?? null,
         });
       }
 
@@ -67,19 +64,12 @@ sync.post('/recent', async (c) => {
 
     console.log('[sync] step 4: upserting', newArtists.length, 'artists');
     if (newArtists.length > 0) {
-      // Deduplicate artists by ID
       const uniqueArtists = Array.from(new Map(newArtists.map(a => [a.spotifyArtistId, a])).values());
-      await db.insert(artists).values(uniqueArtists).onConflictDoUpdate({
-        target: artists.spotifyArtistId,
-        set: {
-          imageUrl: sql`COALESCE(artists.image_url, EXCLUDED.image_url)`,
-        },
-      });
+      await db.insert(artists).values(uniqueArtists).onConflictDoNothing();
     }
     
     console.log('[sync] step 5: upserting', newTracks.length, 'tracks');
     if (newTracks.length > 0) {
-      // Deduplicate tracks by ID
       const uniqueTracks = Array.from(new Map(newTracks.map(t => [t.spotifyTrackId, t])).values());
       await db.insert(tracks).values(uniqueTracks).onConflictDoUpdate({
         target: tracks.spotifyTrackId,
@@ -89,7 +79,6 @@ sync.post('/recent', async (c) => {
       });
     }
 
-    // Enrich artists with profile images
     const allArtistIds = [...new Set(newArtists.map(a => a.spotifyArtistId))];
     if (allArtistIds.length > 0) {
       try {
@@ -107,18 +96,12 @@ sync.post('/recent', async (c) => {
                 .where(eq(artists.spotifyArtistId, artist.id));
             }
           }
-        } else {
-          console.log('[sync] artist enrich returned', artistRes.status);
         }
       } catch (err) {
         console.error('[sync] artist enrich failed:', err);
       }
     }
     
-    console.log('[sync] step 5: enriching artists');
-    // ... existing artist enrichment ...
-    
-    // NEW: Enrich tracks with Audio Features (Tempo)
     const trackIdsToEnrich = newTracks.map(t => t.spotifyTrackId);
     if (trackIdsToEnrich.length > 0) {
       try {
@@ -144,7 +127,6 @@ sync.post('/recent', async (c) => {
 
     console.log('[sync] step 6: inserting', newEvents.length, 'events');
     if (newEvents.length > 0) {
-      // Deduplicate events by (userId, trackId, playedAt)
       const uniqueEvents = Array.from(new Map(newEvents.map(e => [`${e.userId}-${e.spotifyTrackId}-${e.playedAt.getTime()}`, e])).values());
       await db.insert(listeningEvents).values(uniqueEvents).onConflictDoNothing();
     }
@@ -152,21 +134,10 @@ sync.post('/recent', async (c) => {
     console.log('[sync] step 7: running aggregation');
     await runAggregation(env);
 
-    console.log('[sync] step 8: busting cache');
-    const redis = getRedis(env.UPSTASH_REDIS_REST_URL, env.UPSTASH_REDIS_REST_TOKEN);
-    await deleteCache(redis, `stats:today:${userId}`);
-
     console.log('[sync] done');
-    return c.json({ message: 'Sync complete', synced: newEvents.length });
-  } catch (err: any) {
-    console.error('[sync] FAILED:', err);
-    const errObj: any = {};
-    Object.getOwnPropertyNames(err).forEach(key => errObj[key] = err[key]);
-    if (err.cause) {
-      errObj.cause = {};
-      Object.getOwnPropertyNames(err.cause).forEach(key => errObj.cause[key] = err.cause[key]);
-    }
-    return c.json({ error: errObj }, 500);
+  } catch (e) {
+    console.error('ERROR', e);
   }
+}
 
-});
+testSync().then(() => process.exit(0));

@@ -52,6 +52,7 @@ export async function syncAllUsers(env: Bindings) {
           albumId: track.album?.id,
           durationMs: track.duration_ms,
           imageUrl: albumImageUrl,
+          previewUrl: track.preview_url ?? null,
         });
 
         newEvents.push({

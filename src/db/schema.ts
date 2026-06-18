@@ -27,6 +27,7 @@ export const tracks = pgTable('tracks', {
   energy: integer('energy'),
   danceability: integer('danceability'),
   acousticness: integer('acousticness'),
+  previewUrl: text('preview_url'),
 });
 
 export const artists = pgTable('artists', {

@@ -143,6 +143,7 @@ stats.get('/history', async (c) => {
     artistId:   tracks.artistId,
     artistName: artists.name,
     tempo:      tracks.tempo,
+    previewUrl: tracks.previewUrl,
   })
     .from(listeningEvents)
     .innerJoin(tracks,  eq(listeningEvents.spotifyTrackId, tracks.spotifyTrackId))
@@ -189,7 +190,8 @@ stats.get('/dashboard', async (c) => {
       tempo: tracks.tempo,
       valence: tracks.valence,
       energy: tracks.energy,
-      danceability: tracks.danceability
+      danceability: tracks.danceability,
+      previewUrl: tracks.previewUrl
     })
     .from(listeningEvents)
     .innerJoin(tracks, eq(listeningEvents.spotifyTrackId, tracks.spotifyTrackId))

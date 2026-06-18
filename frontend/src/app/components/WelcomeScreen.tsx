@@ -112,7 +112,7 @@ export function WelcomeScreen({ onConnect: _onConnect }: WelcomeScreenProps) {
           onClick={() => {
             const clientId = import.meta.env.VITE_SPOTIFY_CLIENT_ID;
             const redirectUri = encodeURIComponent(window.location.origin + '/');
-            const scope = encodeURIComponent('user-read-recently-played user-top-read');
+            const scope = encodeURIComponent('user-read-recently-played user-top-read playlist-modify-public playlist-modify-private');
             window.location.href = `https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&scope=${scope}`;
           }}
           className="mt-8 w-full py-5 px-8 rounded-full bg-gradient-to-r from-orange-500 via-amber-400 to-yellow-400 text-black font-bold text-lg shadow-2xl relative overflow-hidden group"

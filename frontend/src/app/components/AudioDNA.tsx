@@ -1,5 +1,6 @@
 import { motion } from 'motion/react';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
+import { Play, Pause } from 'lucide-react';
 
 interface AudioDNAProps {
   history: any[];
@@ -27,6 +28,7 @@ export function AudioDNA({ history }: AudioDNAProps) {
       id: event.id,
       trackName: event.trackName || 'Unknown Track',
       artistName: event.artistName || 'Unknown Artist',
+      previewUrl: event.previewUrl,
       color: getColor(event.spotifyTrackId || 'unknown'),
       // Random width variations for that "DNA/Barcode" look
       width: 4 + (Math.abs((event.id || '0').charCodeAt(0)) % 12), 
@@ -34,6 +36,35 @@ export function AudioDNA({ history }: AudioDNAProps) {
   }, [history]);
 
   const [hovered, setHovered] = useState<any>(null);
+  const [playingId, setPlayingId] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    if (!audioRef.current) {
+      audioRef.current = new Audio();
+      audioRef.current.volume = 0.4;
+      audioRef.current.onended = () => setPlayingId(null);
+    }
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, []);
+
+  const handlePlay = (segment: any) => {
+    if (!segment.previewUrl || !audioRef.current) return;
+    
+    if (playingId === segment.id) {
+      audioRef.current.pause();
+      setPlayingId(null);
+    } else {
+      audioRef.current.src = segment.previewUrl;
+      audioRef.current.play().catch(console.error);
+      setPlayingId(segment.id);
+    }
+  };
 
   if (!dnaSegments || dnaSegments.length === 0) return null;
 
@@ -47,30 +78,44 @@ export function AudioDNA({ history }: AudioDNAProps) {
       {/* Hover Tooltip */}
       {hovered && (
         <div className="absolute top-10 left-0 right-0 z-20 flex justify-center pointer-events-none">
-          <div className="bg-black/90 dark:bg-white/90 glass px-3 py-1.5 rounded-full text-[10px] border border-white/10 dark:border-black/10 animate-fadeIn">
+          <div className="bg-black/90 dark:bg-white/90 glass px-3 py-1.5 rounded-full text-[10px] border border-white/10 dark:border-black/10 animate-fadeIn flex items-center gap-2">
+            {!hovered.previewUrl && (
+              <span className="text-red-400 text-[9px] uppercase tracking-widest font-bold">No Audio</span>
+            )}
+            {hovered.previewUrl && playingId !== hovered.id && (
+              <Play className="w-3 h-3 text-white dark:text-black" />
+            )}
+            {hovered.previewUrl && playingId === hovered.id && (
+              <Pause className="w-3 h-3 text-white dark:text-black" />
+            )}
             <span className="font-bold text-white dark:text-black">{hovered.trackName}</span>
-            <span className="mx-1 text-gray-500 dark:text-gray-400">•</span>
+            <span className="text-gray-500 dark:text-gray-400">•</span>
             <span className="text-gray-400">{hovered.artistName}</span>
           </div>
         </div>
       )}
       
       <div className="relative h-32 w-full flex items-stretch gap-[1px] overflow-hidden rounded-2xl glass bg-white/5 p-1 isolate">
-        {dnaSegments.map((segment) => (
-          <div
-            key={segment.id}
-            onMouseEnter={() => setHovered(segment)}
-            onMouseLeave={() => setHovered(null)}
-            className="h-full shrink-0 stagger-fade-in cursor-crosshair transition-opacity hover:opacity-100 hover:scale-x-110"
-            style={{ 
-              backgroundColor: segment.color,
-              width: `${segment.width}px`,
-              boxShadow: `0 0 15px ${segment.color}44`,
-              animationDuration: '0.6s',
-              opacity: hovered ? (hovered.id === segment.id ? 1 : 0.3) : 1
-            }}
-          />
-        ))}
+        {dnaSegments.map((segment) => {
+          const isPlaying = playingId === segment.id;
+          const isPlayable = !!segment.previewUrl;
+          return (
+            <div
+              key={segment.id}
+              onMouseEnter={() => setHovered(segment)}
+              onMouseLeave={() => setHovered(null)}
+              onClick={() => handlePlay(segment)}
+              className={`h-full shrink-0 stagger-fade-in transition-all duration-300 ${isPlayable ? 'cursor-pointer hover:scale-x-150' : 'cursor-not-allowed opacity-40'} ${isPlaying ? 'scale-x-150 brightness-150' : ''}`}
+              style={{ 
+                backgroundColor: segment.color,
+                width: `${segment.width}px`,
+                boxShadow: isPlaying ? `0 0 25px ${segment.color}` : `0 0 15px ${segment.color}44`,
+                animationDuration: '0.6s',
+                opacity: hovered && !isPlaying ? (hovered.id === segment.id ? 1 : 0.2) : (isPlaying ? 1 : (isPlayable ? 0.8 : 0.3))
+              }}
+            />
+          );
+        })}
         
         {/* Dynamic scanning line effect - use x for translate3d performance */}
         <motion.div 

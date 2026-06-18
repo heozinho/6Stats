@@ -1,14 +1,103 @@
 import { motion } from 'motion/react';
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { AudioDNA } from './AudioDNA';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip } from 'recharts';
-import { Wrench, Activity, Target } from 'lucide-react';
+import { Wrench, Activity, Target, Download, Scissors, Clock } from 'lucide-react';
+import html2canvas from 'html2canvas';
 
 interface AnalyticsPlaygroundProps {
   history: any[];
 }
 
-export function AnalyticsPlayground({ history }: AnalyticsPlaygroundProps) {
+export function AnalyticsPlayground({ history: initialHistory }: AnalyticsPlaygroundProps) {
+  const [history, setHistory] = useState(initialHistory);
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [splicing, setSplicing] = useState(false);
+  const dnaRef = useRef<HTMLDivElement>(null);
+
+  // Sync with prop updates
+  useEffect(() => {
+    if (page === 1) {
+      setHistory(initialHistory);
+    }
+  }, [initialHistory, page]);
+
+  const fetchHistoryPage = async (newPage: number) => {
+    setLoading(true);
+    setPage(newPage);
+    try {
+      const token = localStorage.getItem('6stats_token');
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/stats/history?page=${newPage}&limit=50`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setHistory(data.history);
+      }
+    } catch (err) {
+      console.error('Failed to fetch history:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleExport = async () => {
+    if (!dnaRef.current) return;
+    try {
+      const canvas = await html2canvas(dnaRef.current, {
+        backgroundColor: '#111',
+        scale: 2,
+        logging: false
+      });
+      const url = canvas.toDataURL('image/png');
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `6stats-dna-export.png`;
+      a.click();
+    } catch (err) {
+      console.error('Failed to export DNA:', err);
+    }
+  };
+
+  const handleSpliceGenes = async () => {
+    if (!history || history.length === 0) return;
+    setSplicing(true);
+    try {
+      const highEnergyTracks = history.filter(t => t.energy && t.energy > 0.7).map(t => t.spotifyTrackId || t.trackId);
+      if (highEnergyTracks.length === 0) {
+        alert('Not enough high-energy tracks to splice!');
+        setSplicing(false);
+        return;
+      }
+      
+      const token = localStorage.getItem('6stats_token');
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/playlists/splice`, {
+        method: 'POST',
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          trackIds: highEnergyTracks,
+          name: '6Stats: High Energy DNA Spliced'
+        })
+      });
+      
+      const data = await res.json();
+      if (res.ok) {
+        alert(`Playlist created! Opening in Spotify...`);
+        window.open(data.url, '_blank');
+      } else {
+        alert('Failed to splice genes: ' + data.error);
+      }
+    } catch (err) {
+      console.error('Error splicing genes:', err);
+    } finally {
+      setSplicing(false);
+    }
+  };
+
   // 1. Radar Chart Data (Average Vibe)
   const radarData = useMemo(() => {
     if (!history || history.length === 0) return [];
@@ -67,8 +156,55 @@ export function AnalyticsPlayground({ history }: AnalyticsPlaygroundProps) {
         </div>
 
         {/* The Audio DNA Bar */}
-        <div className="mb-12">
-          <AudioDNA history={history} />
+        <div className="mb-12 glass bg-black/5 dark:bg-white/5 rounded-3xl p-6">
+          <div ref={dnaRef} className="p-4 bg-background rounded-2xl">
+            <AudioDNA history={history} />
+          </div>
+          
+          {/* Controls */}
+          <div className="mt-6 flex flex-col md:flex-row items-center justify-between gap-4 border-t border-foreground/10 pt-6">
+            <div className="flex items-center gap-4">
+              <span className="text-sm font-bold text-foreground/50">DNA ERAS</span>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => fetchHistoryPage(page > 1 ? page - 1 : 1)}
+                  disabled={page === 1 || loading}
+                  className="px-3 py-1.5 rounded-full bg-foreground/10 text-xs font-bold hover:bg-foreground/20 disabled:opacity-50 transition-colors"
+                >
+                  NEWER
+                </button>
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-foreground/5 text-xs font-bold text-foreground/60">
+                  <Clock className="w-3 h-3" />
+                  ERA {page}
+                </div>
+                <button 
+                  onClick={() => fetchHistoryPage(page + 1)}
+                  disabled={loading}
+                  className="px-3 py-1.5 rounded-full bg-foreground/10 text-xs font-bold hover:bg-foreground/20 disabled:opacity-50 transition-colors"
+                >
+                  OLDER
+                </button>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-3 w-full md:w-auto">
+              <button 
+                onClick={handleSpliceGenes}
+                disabled={splicing}
+                className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-green-500/10 text-green-500 font-bold text-sm hover:bg-green-500/20 transition-colors disabled:opacity-50"
+              >
+                <Scissors className="w-4 h-4" />
+                {splicing ? 'Splicing...' : 'Splice High-Energy Genes'}
+              </button>
+              <button 
+                onClick={handleExport}
+                className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-foreground/10 text-foreground font-bold text-sm hover:bg-foreground/20 transition-colors"
+              >
+                <Download className="w-4 h-4" />
+                Export Poster
+              </button>
+            </div>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

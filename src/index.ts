@@ -5,6 +5,7 @@ import { Bindings, Variables } from './types';
 import { auth } from './routes/auth';
 import { sync } from './routes/sync';
 import { stats } from './routes/stats';
+import { playlists } from './routes/playlists';
 import { runArchiving } from './crons/archive';
 import { syncAllUsers } from './crons/syncAll';
 
@@ -59,6 +60,7 @@ app.use('/stats/*', async (c, next) => {
 
 app.route('/sync', sync);
 app.route('/stats', stats);
+app.route('/playlists', playlists);
 
 app.get('/', (c) => c.text('6Stats API is running'));
 
