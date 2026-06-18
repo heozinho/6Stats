@@ -1,5 +1,3 @@
-import { motion } from 'motion/react';
-
 interface GlowBackgroundProps {
   bpm?: number;
 }
@@ -10,54 +8,28 @@ export function GlowBackground({ bpm = 120 }: GlowBackgroundProps) {
   const pulseDuration = 60 / safeBpm;
 
   return (
-    <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-      {/* Primary Glow Orbs */}
-      <motion.div
-        className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full opacity-20 blur-[120px]"
+    <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none" style={{ '--pulse-duration': `${pulseDuration}s` } as any}>
+      {/* Primary Glow Orbs - CSS Animated for Performance */}
+      <div 
+        className="absolute top-[-20%] left-[-20%] w-[80%] h-[80%] rounded-full opacity-30 blur-[120px] animate-float"
         style={{ backgroundColor: 'var(--glow-1)' }}
-        animate={{
-          x: [0, 50, 0],
-          y: [0, 30, 0],
-          scale: [1, 1.1, 1],
-        }}
-        transition={{
-          duration: 15,
-          repeat: Infinity,
-          ease: "easeInOut"
-        }}
       />
 
-      <motion.div
-        className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full opacity-15 blur-[120px]"
-        style={{ backgroundColor: 'var(--glow-2)' }}
-        animate={{
-          x: [0, -40, 0],
-          y: [0, -60, 0],
-          scale: [1, 1.2, 1],
-        }}
-        transition={{
-          duration: 18,
-          repeat: Infinity,
-          ease: "easeInOut"
-        }}
+      <div 
+        className="absolute bottom-[-20%] right-[-20%] w-[70%] h-[70%] rounded-full opacity-25 blur-[120px] animate-float"
+        style={{ backgroundColor: 'var(--glow-2)', animationDelay: '-5s' }}
       />
 
-      <motion.div
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[40%] h-[40%] rounded-full opacity-10 blur-[120px]"
+      <div 
+        className="absolute top-1/2 left-1/2 w-[60%] h-[60%] rounded-full blur-[100px] animate-pulse-glow"
         style={{ backgroundColor: 'var(--glow-3)' }}
-        animate={{
-          scale: [1, 1.3, 1],
-          opacity: [0.05, 0.15, 0.05],
-        }}
-        transition={{
-          duration: pulseDuration * 4, // Pulse linked to BPM
-          repeat: Infinity,
-          ease: "easeInOut"
-        }}
       />
 
-      {/* Grainy Texture Overlay */}
-      <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://grainy-gradients.vercel.app/noise.svg')] brightness-100 contrast-150" />
+      {/* Grainy Texture Overlay - Data URI for zero-latency loading */}
+      <div 
+        className="absolute inset-0 opacity-[0.06] pointer-events-none brightness-100 contrast-150"
+        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
+      />
     </div>
   );
 }

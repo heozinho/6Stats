@@ -23,6 +23,10 @@ export const tracks = pgTable('tracks', {
   durationMs: integer('duration_ms').notNull(),
   imageUrl: text('image_url'),
   tempo: integer('tempo'),
+  valence: integer('valence'),
+  energy: integer('energy'),
+  danceability: integer('danceability'),
+  acousticness: integer('acousticness'),
 });
 
 export const artists = pgTable('artists', {

@@ -10,6 +10,21 @@ import { syncAllUsers } from './crons/syncAll';
 
 const app = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 
+app.get('/db-fix-mood', async (c) => {
+  const { getDb } = await import('./db');
+  const { sql } = await import('drizzle-orm');
+  const db = getDb(c.env.DATABASE_URL);
+  try {
+    await db.execute(sql`ALTER TABLE tracks ADD COLUMN IF NOT EXISTS valence integer;`);
+    await db.execute(sql`ALTER TABLE tracks ADD COLUMN IF NOT EXISTS energy integer;`);
+    await db.execute(sql`ALTER TABLE tracks ADD COLUMN IF NOT EXISTS danceability integer;`);
+    await db.execute(sql`ALTER TABLE tracks ADD COLUMN IF NOT EXISTS acousticness integer;`);
+    return c.json({ ok: true });
+  } catch (e: any) {
+    return c.json({ ok: false, error: e.message });
+  }
+});
+
 app.use('*', cors());
 
 app.route('/auth', auth);

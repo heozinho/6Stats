@@ -115,14 +115,19 @@ sync.post('/recent', async (c) => {
     const trackIdsToEnrich = newTracks.map(t => t.spotifyTrackId);
     if (trackIdsToEnrich.length > 0) {
       try {
-        const audioFeatures = await getAudioFeatures(accessToken, trackIdsToEnrich);
+        const audioFeatures = await getAudioFeatures(token, trackIdsToEnrich);
         if (audioFeatures && Array.isArray(audioFeatures)) {
           for (const feature of audioFeatures) {
             if (!feature) continue;
-            const track = newTracks.find(t => t.spotifyTrackId === feature.id);
-            if (track) {
-              track.tempo = Math.round(feature.tempo);
-            }
+            await db.update(tracks)
+              .set({ 
+                tempo: Math.round(feature.tempo || 0),
+                valence: Math.round((feature.valence || 0) * 100),
+                energy: Math.round((feature.energy || 0) * 100),
+                danceability: Math.round((feature.danceability || 0) * 100),
+                acousticness: Math.round((feature.acousticness || 0) * 100),
+              })
+              .where(eq(tracks.spotifyTrackId, feature.id));
           }
         }
       } catch (err) {

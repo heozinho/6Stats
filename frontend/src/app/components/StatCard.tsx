@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import { Share2, X, Sparkles, Music, Mic2, Clock } from 'lucide-react';
+import { Share2, X, Music, Mic2, Clock, Play, BarChart2 } from 'lucide-react';
 
 interface StatCardProps {
   onClose: () => void;
@@ -32,79 +32,78 @@ export function StatCard({ onClose, todayStats, topTracks, topArtists }: StatCar
         // User cancelled or not supported
       }
     } else {
-      // Fallback: copy to clipboard
-      const text = `🎵 My 6Stats today:\n⏱ ${minutesListened} minutes listened\n🔥 Top track: ${topTrack?.name ?? '—'}\n🎤 Top artist: ${topArtist?.name ?? '—'}`;
+      const text = `My 6Stats today:\n${minutesListened} minutes listened\nTop track: ${topTrack?.name ?? '—'}\nTop artist: ${topArtist?.name ?? '—'}`;
       await navigator.clipboard.writeText(text);
       alert('Stats copied to clipboard!');
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/90 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/80 backdrop-blur-md">
       <motion.div
         className="relative w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl"
-        style={{ background: 'linear-gradient(135deg, #ff6b35 0%, #ffd23f 50%, #4ecdc4 100%)' }}
-        initial={{ scale: 0.85, opacity: 0, y: 40 }}
+        style={{
+          background: 'linear-gradient(160deg, #111111 0%, #1a1a1a 40%, #0e0e0e 100%)',
+          border: '1px solid rgba(255,255,255,0.08)',
+        }}
+        initial={{ scale: 0.88, opacity: 0, y: 32 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
-        exit={{ scale: 0.85, opacity: 0 }}
-        transition={{ type: 'spring', duration: 0.5 }}
+        exit={{ scale: 0.88, opacity: 0 }}
+        transition={{ type: 'spring', duration: 0.45, bounce: 0.25 }}
       >
-        {/* Animated shimmer overlay */}
-        <motion.div
-          className="absolute inset-0 opacity-20 pointer-events-none"
-          style={{ background: 'radial-gradient(circle at 50% 30%, white 0%, transparent 65%)' }}
-          animate={{ scale: [1, 1.15, 1], opacity: [0.2, 0.4, 0.2] }}
-          transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+        {/* Subtle top accent line */}
+        <div
+          className="absolute top-0 left-0 right-0 h-px"
+          style={{ background: 'linear-gradient(90deg, transparent, rgba(255,107,53,0.6), rgba(255,210,63,0.6), transparent)' }}
         />
-
-        {/* Floating sparkles */}
-        <motion.div
-          className="absolute top-8 left-8 pointer-events-none"
-          animate={{ y: [0, -10, 0], rotate: [0, 8, 0] }}
-          transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-        >
-          <Sparkles className="w-6 h-6 text-white/50" />
-        </motion.div>
-        <motion.div
-          className="absolute top-16 right-10 pointer-events-none"
-          animate={{ y: [0, 10, 0], rotate: [0, -8, 0] }}
-          transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-        >
-          <Sparkles className="w-5 h-5 text-white/30" />
-        </motion.div>
 
         {/* Close */}
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 z-20 w-9 h-9 rounded-full bg-black/20 backdrop-blur-sm flex items-center justify-center hover:bg-black/30 transition-colors"
+          className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full flex items-center justify-center transition-colors"
+          style={{ background: 'rgba(255,255,255,0.07)' }}
         >
-          <X className="w-4 h-4 text-white" />
+          <X className="w-4 h-4 text-white/60" />
         </button>
 
-        <div className="relative p-8 pb-6 flex flex-col gap-5">
+        <div className="relative p-7 pb-6 flex flex-col gap-5">
 
           {/* Header */}
           <motion.div
-            className="text-center"
-            initial={{ opacity: 0, y: 20 }}
+            className="flex flex-col gap-1"
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
+            transition={{ delay: 0.1 }}
           >
-            <div className="text-black/60 text-sm font-semibold uppercase tracking-widest mb-1">Today's Recap</div>
-            <div className="text-black text-5xl font-black tabular-nums">{minutesListened.toLocaleString()}</div>
-            <div className="text-black/70 text-sm font-medium mt-1 flex items-center justify-center gap-1">
-              <Clock className="w-3.5 h-3.5" />
-              minutes listened · {totalPlays} plays
+            <div className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.35)' }}>Today's Recap</div>
+            <div className="flex items-end gap-3 mt-1">
+              <div className="text-6xl font-black tabular-nums text-white leading-none">{minutesListened.toLocaleString()}</div>
+              <div className="pb-1 flex flex-col gap-0.5">
+                <span className="text-sm font-semibold" style={{ color: 'rgba(255,255,255,0.5)' }}>mins</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-4 mt-2">
+              <div className="flex items-center gap-1.5" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                <Clock className="w-3.5 h-3.5" />
+                <span className="text-xs">{msToReadable(todayStats?.totalMs ?? 0)}</span>
+              </div>
+              <div className="flex items-center gap-1.5" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                <Play className="w-3.5 h-3.5" />
+                <span className="text-xs">{totalPlays} plays</span>
+              </div>
             </div>
           </motion.div>
+
+          {/* Divider */}
+          <div className="h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
 
           {/* Top Track */}
           {topTrack && (
             <motion.div
-              className="bg-black/10 backdrop-blur-sm rounded-2xl p-4 flex items-center gap-4"
-              initial={{ opacity: 0, x: -20 }}
+              className="flex items-center gap-4"
+              initial={{ opacity: 0, x: -16 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.25 }}
+              transition={{ delay: 0.2 }}
             >
               {topTrack.imageUrl ? (
                 <img
@@ -113,14 +112,22 @@ export function StatCard({ onClose, todayStats, topTracks, topArtists }: StatCar
                   className="w-14 h-14 rounded-xl object-cover shadow-lg shrink-0"
                 />
               ) : (
-                <div className="w-14 h-14 rounded-xl bg-black/20 flex items-center justify-center shrink-0">
-                  <Music className="w-6 h-6 text-black/40" />
+                <div
+                  className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0"
+                  style={{ background: 'rgba(255,255,255,0.06)' }}
+                >
+                  <Music className="w-6 h-6" style={{ color: 'rgba(255,255,255,0.3)' }} />
                 </div>
               )}
-              <div className="min-w-0">
-                <div className="text-black/60 text-xs font-bold uppercase tracking-wider mb-0.5">🔥 Top Track</div>
-                <div className="text-black font-black text-base truncate">{topTrack.name}</div>
-                <div className="text-black/60 text-xs">{topTrack.playCount} plays · {msToReadable(topTrack.msPlayed ?? 0)}</div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <BarChart2 className="w-3 h-3 shrink-0" style={{ color: '#ff6b35' }} />
+                  <span className="text-xs font-bold uppercase tracking-wider" style={{ color: '#ff6b35' }}>Top Track</span>
+                </div>
+                <div className="text-white font-bold text-sm truncate">{topTrack.name}</div>
+                <div className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                  {topTrack.playCount} plays · {msToReadable(topTrack.msPlayed ?? 0)}
+                </div>
               </div>
             </motion.div>
           )}
@@ -128,10 +135,10 @@ export function StatCard({ onClose, todayStats, topTracks, topArtists }: StatCar
           {/* Top Artist */}
           {topArtist && (
             <motion.div
-              className="bg-black/10 backdrop-blur-sm rounded-2xl p-4 flex items-center gap-4"
-              initial={{ opacity: 0, x: 20 }}
+              className="flex items-center gap-4"
+              initial={{ opacity: 0, x: 16 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.35 }}
+              transition={{ delay: 0.3 }}
             >
               {topArtist.imageUrl ? (
                 <img
@@ -140,14 +147,22 @@ export function StatCard({ onClose, todayStats, topTracks, topArtists }: StatCar
                   className="w-14 h-14 rounded-full object-cover shadow-lg shrink-0"
                 />
               ) : (
-                <div className="w-14 h-14 rounded-full bg-black/20 flex items-center justify-center shrink-0">
-                  <Mic2 className="w-6 h-6 text-black/40" />
+                <div
+                  className="w-14 h-14 rounded-full flex items-center justify-center shrink-0"
+                  style={{ background: 'rgba(255,255,255,0.06)' }}
+                >
+                  <Mic2 className="w-6 h-6" style={{ color: 'rgba(255,255,255,0.3)' }} />
                 </div>
               )}
-              <div className="min-w-0">
-                <div className="text-black/60 text-xs font-bold uppercase tracking-wider mb-0.5">🎤 Top Artist</div>
-                <div className="text-black font-black text-base truncate">{topArtist.name}</div>
-                <div className="text-black/60 text-xs">{topArtist.playCount} plays · {msToReadable(topArtist.msPlayed ?? 0)}</div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Mic2 className="w-3 h-3 shrink-0" style={{ color: '#4ecdc4' }} />
+                  <span className="text-xs font-bold uppercase tracking-wider" style={{ color: '#4ecdc4' }}>Top Artist</span>
+                </div>
+                <div className="text-white font-bold text-sm truncate">{topArtist.name}</div>
+                <div className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                  {topArtist.playCount} plays · {msToReadable(topArtist.msPlayed ?? 0)}
+                </div>
               </div>
             </motion.div>
           )}
@@ -155,27 +170,31 @@ export function StatCard({ onClose, todayStats, topTracks, topArtists }: StatCar
           {/* No data state */}
           {!topTrack && !topArtist && (
             <motion.div
-              className="bg-black/10 rounded-2xl p-6 text-center"
+              className="py-6 text-center"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 0.25 }}
+              transition={{ delay: 0.2 }}
             >
-              <p className="text-black/60 text-sm">Sync some plays first to see your stats!</p>
+              <p className="text-sm" style={{ color: 'rgba(255,255,255,0.35)' }}>Sync some plays first to see your stats.</p>
             </motion.div>
           )}
+
+          {/* Divider */}
+          <div className="h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
 
           {/* Share Button */}
           <motion.button
             onClick={handleShare}
-            className="w-full py-4 rounded-2xl bg-black text-white font-bold text-base shadow-xl hover:bg-black/80 transition-colors flex items-center justify-center gap-2"
-            initial={{ opacity: 0, y: 20 }}
+            className="w-full py-3.5 rounded-2xl font-semibold text-sm flex items-center justify-center gap-2 transition-opacity hover:opacity-90"
+            style={{ background: 'linear-gradient(135deg, #ff6b35, #ffd23f)', color: '#000' }}
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.45 }}
+            transition={{ delay: 0.4 }}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.97 }}
           >
-            <Share2 className="w-5 h-5" />
-            Share My Stats
+            <Share2 className="w-4 h-4" />
+            Share Stats
           </motion.button>
         </div>
       </motion.div>

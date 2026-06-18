@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import { Clock, TrendingUp, Share2, ChevronRight, RefreshCw, Music, Mic2 } from 'lucide-react';
+import { Clock, TrendingUp, Share2, ChevronRight, RefreshCw, Music, Mic2, BarChart2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { AudioDNA } from './AudioDNA';
 
@@ -115,7 +115,7 @@ export function Dashboard({ backendUrl, getHeaders, lastSynced, syncing, onSync,
       >
         <div>
           <h2 className="text-4xl font-extrabold mb-1">Your Stats</h2>
-          <p className="text-gray-400 text-sm">Celebrate your music journey</p>
+          <p className="text-sm" style={{ color: 'rgba(255,255,255,0.3)' }}>Listening history · Spotify</p>
         </div>
         <div className="flex flex-col items-end gap-1">
           <button
@@ -191,27 +191,20 @@ export function Dashboard({ backendUrl, getHeaders, lastSynced, syncing, onSync,
       </motion.div>
       
       {/* Audio DNA Visualization */}
-      <motion.div
-        className="mb-10"
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.25 }}
-      >
+      <div className="mb-10">
         <AudioDNA history={history} />
-      </motion.div>
+      </div>
 
       {/* Top Tracks */}
       <motion.section
         className="mb-8"
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: "-50px" }}
-        transition={{ delay: 0.1 }}
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
       >
-        <h3 className="text-2xl font-extrabold mb-4">
-          <span className="bg-gradient-to-r from-orange-400 to-yellow-400 bg-clip-text text-transparent">
-            Top Tracks
-          </span>
+        <h3 className="flex items-center gap-2 text-lg font-bold mb-4">
+          <BarChart2 className="w-4 h-4" style={{ color: '#ff6b35' }} />
+          <span style={{ color: 'rgba(255,255,255,0.85)' }}>Top Tracks</span>
         </h3>
 
         {topTracks.length === 0 ? (
@@ -224,13 +217,10 @@ export function Dashboard({ backendUrl, getHeaders, lastSynced, syncing, onSync,
         {(topTracks || []).map((track, index) => {
               const accent = getColor(index);
               return (
-                <motion.div
+                <div
                   key={track.trackId}
-                  className="bg-white/5 glass rounded-2xl flex items-center gap-4 p-3 pr-5 hover:bg-white/10 transition-all group cursor-pointer"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.3 + index * 0.06 }}
-                  whileHover={{ scale: 1.01 }}
+                  className="bg-white/5 glass rounded-2xl flex items-center gap-4 p-3 pr-5 hover:bg-white/10 transition-all group cursor-pointer stagger-fade-in"
+                  style={{ animationDelay: `${index * 0.05}s` }}
                 >
                   <div className="w-8 text-center text-sm font-black shrink-0" style={{ color: accent }}>
                     {index + 1}
@@ -250,7 +240,7 @@ export function Dashboard({ backendUrl, getHeaders, lastSynced, syncing, onSync,
                     {track.playCount} plays
                   </div>
                   <ChevronRight className="w-4 h-4 text-gray-600 group-hover:text-gray-300 transition-colors shrink-0" />
-                </motion.div>
+                </div>
               );
             })}
           </div>
@@ -259,15 +249,14 @@ export function Dashboard({ backendUrl, getHeaders, lastSynced, syncing, onSync,
 
       {/* Top Artists */}
       <motion.section
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: "-50px" }}
-        transition={{ delay: 0.1 }}
+        className="mb-8"
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
       >
-        <h3 className="text-2xl font-extrabold mb-4">
-          <span className="bg-gradient-to-r from-teal-400 to-cyan-400 bg-clip-text text-transparent">
-            Top Artists
-          </span>
+        <h3 className="flex items-center gap-2 text-lg font-bold mb-4">
+          <Mic2 className="w-4 h-4" style={{ color: '#4ecdc4' }} />
+          <span style={{ color: 'rgba(255,255,255,0.85)' }}>Top Artists</span>
         </h3>
 
         {topArtists.length === 0 ? (
@@ -280,13 +269,10 @@ export function Dashboard({ backendUrl, getHeaders, lastSynced, syncing, onSync,
             {(topArtists || []).map((artist, index) => {
               const accent = getColor(index + 2);
               return (
-                <motion.div
+                <div
                   key={artist.artistId}
-                  className="bg-white/5 glass rounded-2xl overflow-hidden cursor-pointer hover:bg-white/10 transition-all group relative"
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.8 + index * 0.08 }}
-                  whileHover={{ scale: 1.03 }}
+                  className="bg-white/5 glass rounded-2xl overflow-hidden cursor-pointer hover:bg-white/10 transition-all group relative stagger-fade-in"
+                  style={{ animationDelay: `${index * 0.08}s` }}
                 >
                   {artist.imageUrl ? (
                     <div className="relative w-full aspect-square">
@@ -312,7 +298,7 @@ export function Dashboard({ backendUrl, getHeaders, lastSynced, syncing, onSync,
                       </div>
                     )}
                   </div>
-                </motion.div>
+                </div>
               );
             })}
           </div>
