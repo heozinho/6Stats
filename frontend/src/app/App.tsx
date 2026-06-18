@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { LayoutDashboard, History, LogOut, RefreshCw, Sparkles } from 'lucide-react';
+import { LayoutDashboard, History, LogOut, RefreshCw, Wrench } from 'lucide-react';
 import { WelcomeScreen } from './components/WelcomeScreen';
 import { Dashboard } from './components/Dashboard';
 import { StatCard } from './components/StatCard';
@@ -249,7 +249,7 @@ export default function App() {
                 activeTab === 'playground' ? 'text-yellow-400' : 'text-gray-500 hover:text-gray-300'
               }`}
             >
-              <Sparkles className="w-5 h-5" />
+              <Wrench className="w-5 h-5" />
               <span className="text-xs font-semibold">Playground</span>
             </button>
           </nav>

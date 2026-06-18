@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import { Clock, TrendingUp, Share2, ChevronRight, Music, BarChart2, Sparkles, Mic2 } from 'lucide-react';
+import { Clock, TrendingUp, Share2, ChevronRight, Music, BarChart2, Wrench, Mic2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 function msToReadable(ms: number) {
@@ -179,7 +179,7 @@ export function Dashboard({ backendUrl, fetchWithAuth, lastSynced, onViewStatCar
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-white/10 rounded-2xl">
-              <Sparkles className="w-6 h-6 text-teal-400" />
+              <Wrench className="w-6 h-6 text-yellow-400" />
             </div>
             <div>
               <h3 className="text-lg font-bold text-white mb-0.5">Analytics Playground</h3>

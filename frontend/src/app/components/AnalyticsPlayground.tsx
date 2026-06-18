@@ -2,7 +2,7 @@ import { motion } from 'motion/react';
 import { useMemo } from 'react';
 import { AudioDNA } from './AudioDNA';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip } from 'recharts';
-import { Sparkles, Activity, Target } from 'lucide-react';
+import { Wrench, Activity, Target } from 'lucide-react';
 
 interface AnalyticsPlaygroundProps {
   history: any[];
@@ -62,7 +62,7 @@ export function AnalyticsPlayground({ history }: AnalyticsPlaygroundProps) {
         className="max-w-4xl mx-auto"
       >
         <div className="flex items-center gap-3 mb-8">
-          <Sparkles className="w-8 h-8 text-yellow-400" />
+          <Wrench className="w-8 h-8 text-yellow-400" />
           <h2 className="text-3xl font-black tracking-tight">Analytics Playground</h2>
         </div>
 
