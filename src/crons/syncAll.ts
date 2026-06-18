@@ -114,6 +114,10 @@ export async function syncAllUsers(env: Bindings) {
   }
 
   // Run aggregation once for all users after syncing
-  await runAggregation(env);
-  console.log('[syncAll] Aggregation complete');
+  try {
+    await runAggregation(env);
+    console.log('[syncAll] Aggregation complete');
+  } catch (aggErr) {
+    console.error('[syncAll] Aggregation failed completely:', aggErr);
+  }
 }
