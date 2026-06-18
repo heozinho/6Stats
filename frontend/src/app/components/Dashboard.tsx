@@ -242,35 +242,50 @@ export function Dashboard({ backendUrl, fetchWithAuth, lastSynced, onViewStatCar
             <p className="italic text-sm">No artists {isWeek ? 'this week' : 'today'} yet.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-8">
             {(topArtists || []).map((artist, index) => {
               const accent = getColor(index + 2);
               return (
                 <div
                   key={artist.artistId}
-                  className="bg-white/5 glass rounded-2xl overflow-hidden cursor-pointer hover:bg-white/10 transition-all group relative stagger-fade-in"
-                  style={{ animationDelay: `${index * 0.08}s` }}
+                  className="cursor-pointer group relative stagger-fade-in flex flex-col"
+                  style={{ animationDelay: `${index * 0.05}s` }}
                 >
-                  {artist.imageUrl ? (
-                    <div className="relative w-full aspect-square">
-                      <img src={artist.imageUrl} alt={artist.name} className="w-full h-full object-cover" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                      <div className="absolute top-2 left-2 w-7 h-7 rounded-full flex items-center justify-center text-xs font-black" style={{ background: accent }}>
-                        {index + 1}
+                  <div className="relative w-full aspect-square mb-3">
+                    {artist.imageUrl ? (
+                      <>
+                        <img 
+                          src={artist.imageUrl} 
+                          alt={artist.name} 
+                          className="w-full h-full object-cover rounded-[1.25rem] shadow-[0_8px_24px_-8px_rgba(0,0,0,0.5)] transition-transform duration-300 group-hover:-translate-y-1" 
+                        />
+                        <div className="absolute inset-0 rounded-[1.25rem] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)] pointer-events-none" />
+                      </>
+                    ) : (
+                      <div 
+                        className="w-full h-full rounded-[1.25rem] shadow-[0_8px_24px_-8px_rgba(0,0,0,0.5)] flex items-center justify-center transition-transform duration-300 group-hover:-translate-y-1" 
+                        style={{ background: `linear-gradient(135deg, ${accent}, ${accent}77)` }}
+                      >
+                        <Mic2 className="w-10 h-10 text-white/50" />
                       </div>
-                    </div>
-                  ) : (
-                    <div className="w-full aspect-square flex items-center justify-center text-3xl font-black" style={{ background: `linear-gradient(135deg, ${accent}, ${accent}77)` }}>
+                    )}
+                    
+                    {/* Rank Badge */}
+                    <div 
+                      className="absolute -top-2 -right-2 w-7 h-7 rounded-full flex items-center justify-center text-xs font-black shadow-md z-10 border-2 border-[#121212]" 
+                      style={{ background: accent, color: '#fff' }}
+                    >
                       {index + 1}
                     </div>
-                  )}
-                  <div className="p-3">
-                    <div className="font-bold text-white text-sm truncate">{artist.name}</div>
-                    <div className="text-xs text-gray-400 mt-0.5">
+                  </div>
+                  
+                  <div className="w-full px-1">
+                    <div className="font-bold text-white text-[15px] leading-tight truncate tracking-tight">{artist.name}</div>
+                    <div className="text-[13px] text-gray-400 mt-0.5 truncate">
                       {artist.playCount} plays · {msToReadable(artist.msPlayed ?? 0)}
                     </div>
                     {artist.genres?.[0] && (
-                      <div className="text-xs mt-1 font-semibold capitalize" style={{ color: accent }}>
+                      <div className="text-[11px] font-medium mt-1 truncate" style={{ color: accent }}>
                         {artist.genres[0]}
                       </div>
                     )}
