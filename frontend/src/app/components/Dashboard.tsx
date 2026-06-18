@@ -1,7 +1,12 @@
 import { motion } from 'motion/react';
-import { Clock, TrendingUp, Share2, ChevronRight, Music, Mic2, BarChart2 } from 'lucide-react';
+import { Clock, TrendingUp, Share2, ChevronRight, Music, BarChart2, Sparkles, Mic2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { AudioDNA } from './AudioDNA';
+
+function msToReadable(ms: number) {
+  const mins = Math.round(ms / 60000);
+  if (mins < 60) return `${mins}m`;
+  return `${Math.floor(mins / 60)}h ${mins % 60}m`;
+}
 
 interface DashboardProps {
   backendUrl: string;
@@ -10,22 +15,17 @@ interface DashboardProps {
   onViewStatCard: (stats: { todayStats: any; topTracks: any[]; topArtists: any[] }) => void;
   onBpmChange: (bpm: number) => void;
   onHistoryChange: (history: any[]) => void;
+  onNavigateToPlayground: () => void;
   history: any[];
 }
 
 const colors = ['#ff6b35', '#ffd23f', '#4ecdc4', '#f4a261', '#95e1d3'];
 const getColor = (index: number) => colors[index % colors.length];
 
-function msToReadable(ms: number) {
-  const mins = Math.round(ms / 60000);
-  if (mins < 60) return `${mins}m`;
-  return `${Math.floor(mins / 60)}h ${mins % 60}m`;
-}
-
 // Detect user's IANA timezone once
 const USER_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 
-export function Dashboard({ backendUrl, fetchWithAuth, lastSynced, onViewStatCard, onBpmChange, onHistoryChange, history }: DashboardProps) {
+export function Dashboard({ backendUrl, fetchWithAuth, lastSynced, onViewStatCard, onBpmChange, onHistoryChange, onNavigateToPlayground }: DashboardProps) {
   const [activeTab, setActiveTab] = useState<'today' | 'week'>('today');
   const [loading, setLoading] = useState(true);
 
@@ -166,11 +166,31 @@ export function Dashboard({ backendUrl, fetchWithAuth, lastSynced, onViewStatCar
           </span>
         </div>
       </motion.div>
-      
-      {/* Audio DNA Visualization */}
-      <div className="mb-10">
-        <AudioDNA history={history} />
-      </div>
+      {/* Analytics Playground Banner */}
+      <motion.div
+        className="mb-10 p-6 rounded-3xl overflow-hidden cursor-pointer glass group relative"
+        style={{ background: 'linear-gradient(135deg, rgba(45, 212, 191, 0.1) 0%, rgba(251, 146, 60, 0.1) 100%)' }}
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: 0.25 }}
+        whileHover={{ scale: 1.02 }}
+        onClick={onNavigateToPlayground}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-white/10 rounded-2xl">
+              <Sparkles className="w-6 h-6 text-teal-400" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-white mb-0.5">Analytics Playground</h3>
+              <p className="text-sm text-gray-400">Audio DNA, Vibe Radar & BPM Heartbeat</p>
+            </div>
+          </div>
+          <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-white/10 transition-colors">
+            <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-white" />
+          </div>
+        </div>
+      </motion.div>
 
       {/* Top Tracks */}
       <motion.section

@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
-import { LayoutDashboard, History, LogOut, RefreshCw } from 'lucide-react';
+import { LayoutDashboard, History, LogOut, RefreshCw, Sparkles } from 'lucide-react';
 import { WelcomeScreen } from './components/WelcomeScreen';
 import { Dashboard } from './components/Dashboard';
 import { StatCard } from './components/StatCard';
 import { HistoryScreen } from './components/HistoryScreen';
+import { AnalyticsPlayground } from './components/AnalyticsPlayground';
 import { GlowBackground } from './components/GlowBackground';
 import { Moon, Sun } from 'lucide-react';
 
@@ -15,7 +16,7 @@ export interface LiveStats {
 
 export default function App() {
   const [screen, setScreen] = useState<'welcome' | 'app' | 'loading'>('welcome');
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'history'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'history' | 'playground'>('dashboard');
   const [showStatCard, setShowStatCard] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [liveStats, setLiveStats] = useState<LiveStats | null>(null);
@@ -203,6 +204,7 @@ export default function App() {
                 onBpmChange={(b) => setBpm(b)}
                 onHistoryChange={(h) => setRecentHistory(h)}
                 history={recentHistory}
+                onNavigateToPlayground={() => setActiveTab('playground')}
                 onViewStatCard={(stats) => {
                   setLiveStats(stats);
                   setShowStatCard(true);
@@ -215,6 +217,9 @@ export default function App() {
                 fetchWithAuth={fetchWithAuth}
                 lastSynced={lastSynced}
               />
+            )}
+            {activeTab === 'playground' && (
+              <AnalyticsPlayground history={recentHistory} />
             )}
           </div>
 
@@ -237,6 +242,15 @@ export default function App() {
             >
               <History className="w-5 h-5" />
               <span className="text-xs font-semibold">History</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('playground')}
+              className={`flex-1 flex flex-col items-center py-4 gap-1 transition-colors ${
+                activeTab === 'playground' ? 'text-yellow-400' : 'text-gray-500 hover:text-gray-300'
+              }`}
+            >
+              <Sparkles className="w-5 h-5" />
+              <span className="text-xs font-semibold">Playground</span>
             </button>
           </nav>
         </>
