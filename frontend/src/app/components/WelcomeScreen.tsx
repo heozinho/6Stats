@@ -74,6 +74,19 @@ export function WelcomeScreen({ onConnect: _onConnect }: WelcomeScreenProps) {
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
       >
+        {/* Brand Logo */}
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="w-16 h-16 relative flex-shrink-0"
+        >
+          <img 
+            src="/brand/6stats_main_logo_transparent.png" 
+            alt="6Stats Logo" 
+            className="w-full h-full object-contain dark:invert"
+          />
+        </motion.div>
         {/* Animated Logo */}
         <motion.div
           className="flex items-center gap-2"

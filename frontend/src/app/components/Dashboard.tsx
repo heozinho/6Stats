@@ -103,9 +103,18 @@ export function Dashboard({ backendUrl, fetchWithAuth, lastSynced, onViewStatCar
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <div>
-          <h2 className="text-4xl font-extrabold mb-1">Your Stats</h2>
-          <p className="text-sm" style={{ color: 'rgba(255,255,255,0.3)' }}>Listening history · Spotify</p>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 relative flex-shrink-0">
+            <img 
+              src="/brand/6stats_main_logo_transparent.png" 
+              alt="6Stats Logo" 
+              className="w-full h-full object-contain dark:invert"
+            />
+          </div>
+          <div>
+            <h2 className="text-4xl font-extrabold mb-1">Your Stats</h2>
+            <p className="text-sm" style={{ color: 'rgba(255,255,255,0.3)' }}>Listening history · Spotify</p>
+          </div>
         </div>
       </motion.div>
 
