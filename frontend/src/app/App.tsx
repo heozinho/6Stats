@@ -6,7 +6,8 @@ import { StatCard } from './components/StatCard';
 import { HistoryScreen } from './components/HistoryScreen';
 import { AnalyticsPlayground } from './components/AnalyticsPlayground';
 import { GlowBackground } from './components/GlowBackground';
-import { Moon, Sun } from 'lucide-react';
+import { Moon, Sun, Settings } from 'lucide-react';
+import { SettingsScreen } from './components/SettingsScreen';
 
 export interface LiveStats {
   todayStats: any;
@@ -16,7 +17,7 @@ export interface LiveStats {
 
 export default function App() {
   const [screen, setScreen] = useState<'welcome' | 'app' | 'loading'>('welcome');
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'history' | 'playground'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'history' | 'playground' | 'settings'>('dashboard');
   const [showStatCard, setShowStatCard] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [liveStats, setLiveStats] = useState<LiveStats | null>(null);
@@ -221,6 +222,9 @@ export default function App() {
             {activeTab === 'playground' && (
               <AnalyticsPlayground history={recentHistory} />
             )}
+            {activeTab === 'settings' && (
+              <SettingsScreen backendUrl={backendUrl} fetchWithAuth={fetchWithAuth} />
+            )}
           </div>
 
           {/* Bottom navigation */}
@@ -251,6 +255,15 @@ export default function App() {
             >
               <Wrench className="w-5 h-5" />
               <span className="text-xs font-semibold">Playground</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('settings')}
+              className={`flex-1 flex flex-col items-center py-4 gap-1 transition-colors ${
+                activeTab === 'settings' ? 'text-purple-400' : 'text-gray-500 hover:text-gray-300'
+              }`}
+            >
+              <Settings className="w-5 h-5" />
+              <span className="text-xs font-semibold">Settings</span>
             </button>
           </nav>
         </>

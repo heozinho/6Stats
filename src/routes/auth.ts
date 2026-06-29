@@ -2,9 +2,10 @@ import { Hono } from 'hono';
 import { Bindings, Variables } from '../types';
 import { exchangeCodeForToken, getUserProfile } from '../services/spotify';
 import { getDb } from '../db';
-import { users, spotifyTokens } from '../db/schema';
+import { users, spotifyTokens, apiKeys } from '../db/schema';
 import { eq } from 'drizzle-orm';
 import { sign } from 'hono/jwt';
+import { getValidSpotifyToken } from '../services/spotify';
 
 export const auth = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 
@@ -73,3 +74,72 @@ auth.post('/spotify/connect', async (c) => {
     return c.json({ error: err.message }, 500);
   }
 });
+
+// Middleware for JWT protected auth routes
+auth.use('/api-keys*', async (c, next) => {
+  const jwtMiddleware = jwt({
+    secret: c.env.JWT_SECRET,
+    alg: 'HS256',
+  });
+  return jwtMiddleware(c, next);
+});
+
+auth.get('/api-keys', async (c) => {
+  const payload = c.get('jwtPayload');
+  const userId = payload.sub as string;
+  const db = getDb(c.env.DATABASE_URL);
+  
+  const keys = await db.select().from(apiKeys).where(eq(apiKeys.userId, userId));
+  return c.json(keys);
+});
+
+auth.post('/api-keys', async (c) => {
+  const payload = c.get('jwtPayload');
+  const userId = payload.sub as string;
+  const db = getDb(c.env.DATABASE_URL);
+  
+  // Generate a random key
+  const key = 'mz_' + crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '').substring(0, 16);
+  
+  const inserted = await db.insert(apiKeys).values({
+    id: crypto.randomUUID(),
+    userId,
+    key,
+  }).returning();
+  
+  return c.json(inserted[0]);
+});
+
+auth.delete('/api-keys/:id', async (c) => {
+  const payload = c.get('jwtPayload');
+  const userId = payload.sub as string;
+  const db = getDb(c.env.DATABASE_URL);
+  const id = c.req.param('id');
+  
+  await db.delete(apiKeys).where(eq(apiKeys.id, id));
+  return c.json({ success: true });
+});
+
+// Endpoint for Muzeebra to get Spotify token
+auth.get('/muzeebra/token', async (c) => {
+  const apiKey = c.req.header('x-api-key') || c.req.query('api_key');
+  if (!apiKey) {
+    return c.json({ error: 'Missing API key' }, 401);
+  }
+
+  const db = getDb(c.env.DATABASE_URL);
+  const rows = await db.select().from(apiKeys).where(eq(apiKeys.key, apiKey)).limit(1);
+  const apiKeyRecord = rows[0];
+
+  if (!apiKeyRecord) {
+    return c.json({ error: 'Invalid API key' }, 401);
+  }
+
+  try {
+    const accessToken = await getValidSpotifyToken(apiKeyRecord.userId, db, c.env);
+    return c.json({ access_token: accessToken });
+  } catch (err: any) {
+    return c.json({ error: err.message }, 500);
+  }
+});
+

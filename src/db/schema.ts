@@ -88,3 +88,11 @@ export const dailyArtistStats = pgTable('daily_artist_stats', {
     pk: uniqueIndex('daily_artist_stats_pk').on(table.userId, table.date, table.spotifyArtistId),
   };
 });
+
+export const apiKeys = pgTable('api_keys', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  key: text('key').notNull(),
+  name: text('name').default('Muzeebra Client'),
+  createdAt: timestamp('created_at').defaultNow(),
+});
