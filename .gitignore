@@ -32,5 +32,8 @@ lerna-debug.log*
 # misc
 .DS_Store
 PROJECT_CONTEXT.md
-backfill_images.ts
-check_db.ts
+
+# ignores
+*.torrent
+*.make
+*.dmg
